@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { X, Calendar as CalendarIcon, MessageSquare, Plus, Check, Edit2, Trash2 } from 'lucide-react';
+import { X, Calendar as CalendarIcon, MessageSquare, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const TaskPanel = () => {
-  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask } = useDashboardStore();
+  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask } = useDashboardStore();
   
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
@@ -17,6 +17,29 @@ export const TaskPanel = () => {
   
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleEditSubmit = (subtaskId: string, e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (editingSubtaskTitle.trim() && selectedTask) {
+      editSubtask(selectedTask.id, subtaskId, editingSubtaskTitle.trim());
+      setEditingSubtaskId(null);
+      setEditingSubtaskTitle('');
+    }
+  };
+
+  const handleDeleteSubtask = (subtaskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirmDeleteId === subtaskId) {
+      if (selectedTask) deleteSubtask(selectedTask.id, subtaskId);
+      setConfirmDeleteId(null);
+    } else {
+      setConfirmDeleteId(subtaskId);
+      setTimeout(() => setConfirmDeleteId(null), 3000);
+    }
+  };
 
   // Sync state when task changes
   useEffect(() => {
@@ -160,33 +183,85 @@ export const TaskPanel = () => {
               {selectedTask.subtasks.map(subtask => (
                 <div 
                   key={subtask.id} 
-                  onClick={() => toggleSubtask(selectedTask.id, subtask.id)}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors cursor-pointer group"
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors group"
                 >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className={clsx(
-                      "w-4 h-4 flex-shrink-0 rounded flex items-center justify-center border transition-colors",
-                      subtask.completed 
-                        ? "bg-[#10b981] border-[#10b981] text-white" 
-                        : "border-slate-500 group-hover:border-slate-400"
-                    )}>
-                      {subtask.completed && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
-                    <span className={clsx(
-                      "text-sm transition-colors",
-                      subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
-                    )}>
-                      {subtask.title}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
-                    {subtask.date && (
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                        <CalendarIcon size={10} /> {subtask.date}
-                      </span>
-                    )}
-                  </div>
+                  {editingSubtaskId === subtask.id ? (
+                    <form 
+                      onSubmit={(e) => handleEditSubmit(subtask.id, e)} 
+                      className="flex items-center gap-2 w-full"
+                    >
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editingSubtaskTitle}
+                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                        className="flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-2 py-1 outline-none"
+                      />
+                      <button 
+                        type="submit" 
+                        className="p-1 text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => setEditingSubtaskId(null)}
+                        className="p-1 text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <div 
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => toggleSubtask(selectedTask.id, subtask.id)}
+                      >
+                        <div className={clsx(
+                          "w-4 h-4 flex-shrink-0 rounded flex items-center justify-center border transition-colors",
+                          subtask.completed 
+                            ? "bg-[#10b981] border-[#10b981] text-white" 
+                            : "border-slate-500 group-hover:border-slate-400"
+                        )}>
+                          {subtask.completed && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        </div>
+                        <span className={clsx(
+                          "text-sm transition-colors",
+                          subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
+                        )}>
+                          {subtask.title}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSubtaskId(subtask.id);
+                            setEditingSubtaskTitle(subtask.title);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                          title="Editar subtarea"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteSubtask(subtask.id, e)}
+                          className={clsx(
+                            "p-1.5 rounded transition-colors flex items-center gap-1",
+                            confirmDeleteId === subtask.id 
+                              ? "bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/50" 
+                              : "text-slate-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 border border-transparent"
+                          )}
+                          title={confirmDeleteId === subtask.id ? "Haz clic de nuevo para eliminar" : "Eliminar subtarea"}
+                        >
+                          <Trash2 size={14} />
+                          {confirmDeleteId === subtask.id && <span className="text-[10px] font-medium pr-1">Confirmar</span>}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

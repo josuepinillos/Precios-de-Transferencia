@@ -26,6 +26,8 @@ interface DashboardState {
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
   addSubtask: (taskId: string, title: string) => void;
+  editSubtask: (taskId: string, subtaskId: string, newTitle: string) => void;
+  deleteSubtask: (taskId: string, subtaskId: string) => void;
   
   // Computed values
   getTaskProgress: (taskId: string) => number;
@@ -101,6 +103,30 @@ export const useDashboardStore = create<DashboardState>()(
               date: "16 May" // Default logic for mockup
             };
             return { ...task, subtasks: [...task.subtasks, newSubtask] };
+          }
+          return task;
+        });
+        return { tasks: updatedTasks };
+      }),
+
+      editSubtask: (taskId, subtaskId, newTitle) => set((state) => {
+        const updatedTasks = state.tasks.map((task) => {
+          if (task.id === taskId) {
+            const updatedSubtasks = task.subtasks.map((st) => 
+              st.id === subtaskId ? { ...st, title: newTitle } : st
+            );
+            return { ...task, subtasks: updatedSubtasks };
+          }
+          return task;
+        });
+        return { tasks: updatedTasks };
+      }),
+
+      deleteSubtask: (taskId, subtaskId) => set((state) => {
+        const updatedTasks = state.tasks.map((task) => {
+          if (task.id === taskId) {
+            const updatedSubtasks = task.subtasks.filter((st) => st.id !== subtaskId);
+            return { ...task, subtasks: updatedSubtasks };
           }
           return task;
         });
