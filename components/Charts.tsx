@@ -43,7 +43,7 @@ export const Charts = () => {
   });
 
   // Calculate critical tasks
-  const criticalTasks = tasks
+  const criticalTasks = getFilteredTasks()
     .filter(t => t.prioridad === 'Alta' && getTaskProgress(t.id) < 100)
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
     .slice(0, 3);

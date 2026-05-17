@@ -20,7 +20,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
   const [description, setDescription] = useState('');
   const [dateBlock, setDateBlock] = useState(TIMELINE_DAYS[0].date);
   const [assigneeIdx, setAssigneeIdx] = useState(0);
-  const [criticality, setCriticality] = useState<'Alta' | 'Media' | 'Baja' | ''>('');
+  const [prioridad, setPrioridad] = useState<'Alta' | 'Media' | 'Baja' | ''>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +33,9 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
       description,
       dateBlock,
       dueDate: selectedDay ? selectedDay.label : "Fecha sin asignar",
+      empresa: "Empresa A",
       assignee: MOCK_USERS[assigneeIdx],
-      criticality: criticality ? (criticality as any) : undefined
+      prioridad: prioridad ? (prioridad as any) : undefined
     });
 
     // Reset form
@@ -42,7 +43,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
     setDescription('');
     setDateBlock(TIMELINE_DAYS[0].date);
     setAssigneeIdx(0);
-    setCriticality('');
+    setPrioridad('');
     onClose();
   };
 
@@ -111,10 +112,10 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                   </div>
                   
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Criticidad</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Prioridad</label>
                     <select 
-                      value={criticality}
-                      onChange={(e) => setCriticality(e.target.value as any)}
+                      value={prioridad}
+                      onChange={(e) => setPrioridad(e.target.value as any)}
                       className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
                     >
                       <option value="">Normal (Ninguna)</option>
