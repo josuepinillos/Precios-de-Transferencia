@@ -1,5 +1,5 @@
 "use client";
-
+import React, { useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { KPICards } from '@/components/KPICards';
@@ -11,7 +11,22 @@ import { Timeline } from '@/components/Timeline';
 import { TaskPanel } from '@/components/TaskPanel';
 
 export default function Home() {
-  const { currentView } = useDashboardStore();
+  const { currentView, initRealtime, isLoaded } = useDashboardStore();
+
+  useEffect(() => {
+    initRealtime();
+  }, [initRealtime]);
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen bg-[#0b0f19] items-center justify-center text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-400 text-sm font-medium">Sincronizando con Supabase...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-[#0b0f19] text-white overflow-hidden">
