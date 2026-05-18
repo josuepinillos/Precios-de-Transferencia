@@ -7,7 +7,7 @@ import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const TaskPanel = () => {
-  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask } = useDashboardStore();
+  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask, error } = useDashboardStore();
   
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
@@ -17,23 +17,32 @@ export const TaskPanel = () => {
   
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [isSavingSubtask, setIsSavingSubtask] = useState(false);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const handleEditSubmit = (subtaskId: string, e?: React.FormEvent) => {
+  const handleEditSubmit = async (subtaskId: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (editingSubtaskTitle.trim() && selectedTask) {
-      editSubtask(selectedTask.id, subtaskId, editingSubtaskTitle.trim());
-      setEditingSubtaskId(null);
-      setEditingSubtaskTitle('');
+      try {
+        await editSubtask(selectedTask.id, subtaskId, editingSubtaskTitle.trim());
+        setEditingSubtaskId(null);
+        setEditingSubtaskTitle('');
+      } catch (error) {
+        console.error('[Supabase] No se pudo editar la subtarea:', error);
+      }
     }
   };
 
   const handleDeleteSubtask = (subtaskId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirmDeleteId === subtaskId) {
-      if (selectedTask) deleteSubtask(selectedTask.id, subtaskId);
+      if (selectedTask) {
+        void deleteSubtask(selectedTask.id, subtaskId).catch((error) => {
+          console.error('[Supabase] No se pudo eliminar la subtarea:', error);
+        });
+      }
       setConfirmDeleteId(null);
     } else {
       setConfirmDeleteId(subtaskId);
@@ -55,23 +64,36 @@ export const TaskPanel = () => {
 
   if (!selectedTask) return null;
 
-  const handleSaveEdit = () => {
-    updateTask(selectedTask.id, { title: editTitle, description: editDesc });
-    setIsEditing(false);
+  const handleSaveEdit = async () => {
+    try {
+      await updateTask(selectedTask.id, { title: editTitle, description: editDesc });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('[Supabase] No se pudo actualizar la tarea:', error);
+    }
   };
 
-  const handleAddSubtask = (e: React.FormEvent) => {
+  const handleAddSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newSubtaskTitle.trim()) {
-      addSubtask(selectedTask.id, newSubtaskTitle.trim());
-      setNewSubtaskTitle('');
-      setIsAddingSubtask(false);
+    if (newSubtaskTitle.trim() && !isSavingSubtask) {
+      try {
+        setIsSavingSubtask(true);
+        await addSubtask(selectedTask.id, newSubtaskTitle.trim());
+        setNewSubtaskTitle('');
+        setIsAddingSubtask(false);
+      } catch (error) {
+        console.error('[Supabase] No se pudo crear la subtarea:', error);
+      } finally {
+        setIsSavingSubtask(false);
+      }
     }
   };
 
   const handleDeleteTask = () => {
     if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
-      deleteTask(selectedTask.id);
+      void deleteTask(selectedTask.id).catch((error) => {
+        console.error('[Supabase] No se pudo eliminar la tarea:', error);
+      });
     }
   };
 
@@ -109,6 +131,12 @@ export const TaskPanel = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-hide pr-2 pb-4">
+          {error && (
+            <div className="mb-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+              {error}
+            </div>
+          )}
+
           {/* Description */}
           <div className="mb-6 relative group">
             <h3 className="text-xs text-slate-400 font-medium mb-2">Descripción</h3>
@@ -216,7 +244,11 @@ export const TaskPanel = () => {
                     <>
                       <div 
                         className="flex items-center gap-3 flex-1 cursor-pointer"
-                        onClick={() => toggleSubtask(selectedTask.id, subtask.id)}
+                        onClick={() => {
+                          void toggleSubtask(selectedTask.id, subtask.id).catch((error) => {
+                            console.error('[Supabase] No se pudo actualizar la subtarea:', error);
+                          });
+                        }}
                       >
                         <div className={clsx(
                           "w-4 h-4 flex-shrink-0 rounded flex items-center justify-center border transition-colors",
@@ -278,7 +310,7 @@ export const TaskPanel = () => {
                   className="flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-[#506ff0]"
                 />
                 <button type="button" onClick={() => setIsAddingSubtask(false)} className="p-2 text-slate-400 hover:text-white"><X size={16}/></button>
-                <button type="submit" className="p-2 bg-[#506ff0] text-white rounded-lg"><Check size={16}/></button>
+                <button type="submit" disabled={isSavingSubtask} className="p-2 bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
               </form>
             ) : (
               <button 

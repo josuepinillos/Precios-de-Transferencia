@@ -1,7 +1,7 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { Task, Subtask } from '../data/mockData';
-import { Database, Json, supabase } from '../lib/supabase';
+import { Database, getSupabaseClient, isSupabaseConfigured, Json } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 type TaskRow = Database['public']['Tables']['tasks']['Row'];
@@ -32,6 +32,7 @@ interface DashboardState {
 
   initRealtime: () => () => void;
   reloadTasks: () => Promise<void>;
+  clearError: () => void;
   selectTask: (id: string | null) => void;
   setCurrentView: (view: 'dashboard' | 'timeline' | 'calendar') => void;
   setCurrentDate: (date: string) => void;
@@ -57,6 +58,8 @@ interface DashboardState {
 }
 
 let realtimeChannels: RealtimeChannel[] = [];
+const recentSubtaskCompletions = new Map<string, { completed: boolean; confirmedAt: number }>();
+const RECENT_CONFIRMATION_MS = 10_000;
 
 const isAssignee = (value: unknown): value is Assignee => {
   if (!value || typeof value !== 'object') return false;
@@ -97,6 +100,17 @@ const formatSubtaskDate = (createdAt?: string) => {
   }).format(new Date(createdAt));
 };
 
+const formatTaskDate = (date: string) => {
+  const parsedDate = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsedDate.getTime())) return date;
+
+  return new Intl.DateTimeFormat('es-PE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsedDate);
+};
+
 const mapDbSubtaskToSubtask = (subtask: SubtaskRow): Subtask => ({
   id: subtask.id,
   title: subtask.title,
@@ -109,12 +123,57 @@ const mapDbTaskToTask = (task: TaskWithSubtasks): Task => ({
   title: task.title,
   description: task.description || '',
   assignee: parseAssignee(task.assignee),
-  dueDate: task.due_date,
+  dueDate: formatTaskDate(task.due_date),
   dateBlock: task.date_block,
   empresa: task.empresa,
   prioridad: task.prioridad,
   subtasks: (task.subtasks || []).map(mapDbSubtaskToSubtask),
 });
+
+const rememberConfirmedSubtaskCompletion = (subtaskId: string, completed: boolean) => {
+  recentSubtaskCompletions.set(subtaskId, { completed, confirmedAt: Date.now() });
+};
+
+const applyRecentSubtaskConfirmations = (tasks: Task[]) => {
+  const now = Date.now();
+
+  return tasks.map((task) => ({
+    ...task,
+    subtasks: task.subtasks.map((subtask) => {
+      const recentCompletion = recentSubtaskCompletions.get(subtask.id);
+      if (!recentCompletion) return subtask;
+
+      if (now - recentCompletion.confirmedAt > RECENT_CONFIRMATION_MS) {
+        recentSubtaskCompletions.delete(subtask.id);
+        return subtask;
+      }
+
+      return { ...subtask, completed: recentCompletion.completed };
+    }),
+  }));
+};
+
+const mergeSubtaskIntoTasks = (tasks: Task[], subtaskRow: SubtaskRow) => {
+  const mappedSubtask = mapDbSubtaskToSubtask(subtaskRow);
+
+  return tasks.map((task) => {
+    if (task.id !== subtaskRow.task_id) return task;
+
+    const exists = task.subtasks.some((subtask) => subtask.id === subtaskRow.id);
+    return {
+      ...task,
+      subtasks: exists
+        ? task.subtasks.map((subtask) => (subtask.id === subtaskRow.id ? mappedSubtask : subtask))
+        : [...task.subtasks, mappedSubtask],
+    };
+  });
+};
+
+const removeSubtaskFromTasks = (tasks: Task[], subtaskId: string) =>
+  tasks.map((task) => ({
+    ...task,
+    subtasks: task.subtasks.filter((subtask) => subtask.id !== subtaskId),
+  }));
 
 const taskToInsert = (id: string, task: Omit<Task, 'id' | 'subtasks'>): TaskInsert => ({
   id,
@@ -139,6 +198,21 @@ const taskUpdatesToDb = (updates: Partial<Task>): TaskUpdate => {
   return dbUpdates;
 };
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'Error desconocido al sincronizar con Supabase.';
+};
+
+const failWithStoreError = (error: unknown, set: (partial: Partial<DashboardState>) => void): never => {
+  const message = getErrorMessage(error);
+  set({ error: message });
+  console.error('[Supabase]', message, error);
+  throw new Error(message);
+};
+
 const withRevertedTasks = async (
   optimisticUpdate: () => void,
   operation: () => PromiseLike<{ error: { message: string } | null }>,
@@ -151,8 +225,8 @@ const withRevertedTasks = async (
   const { error } = await operation();
   if (error) {
     set({ tasks: previousTasks, error: error.message });
-    console.error(error.message);
-    return;
+    console.error('[Supabase]', error.message, error);
+    throw new Error(error.message);
   }
 
   set({ error: null });
@@ -160,7 +234,9 @@ const withRevertedTasks = async (
 
 const clearRealtimeChannels = () => {
   realtimeChannels.forEach((channel) => {
-    supabase.removeChannel(channel);
+    if (isSupabaseConfigured()) {
+      getSupabaseClient().removeChannel(channel);
+    }
   });
   realtimeChannels = [];
 };
@@ -175,30 +251,41 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
   filters: { assignee: 'all', status: 'all', search: '', empresa: 'all', prioridad: 'all' },
 
   reloadTasks: async () => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*, subtasks(*)')
-      .order('date_block', { ascending: true })
-      .order('created_at', { ascending: true })
-      .order('created_at', { referencedTable: 'subtasks', ascending: true });
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*, subtasks(*)')
+        .order('date_block', { ascending: true })
+        .order('created_at', { ascending: true })
+        .order('created_at', { referencedTable: 'subtasks', ascending: true });
 
-    if (error) {
-      set({ error: error.message, isLoaded: true });
-      console.error(error.message);
-      return;
+      if (error) {
+        set({ error: error.message, isLoaded: true });
+        console.error('[Supabase]', error.message, error);
+        return;
+      }
+
+      set({
+        tasks: applyRecentSubtaskConfirmations((data || []).map((task) => mapDbTaskToTask(task as TaskWithSubtasks))),
+        isLoaded: true,
+        error: null,
+      });
+    } catch (error) {
+      set({ error: getErrorMessage(error), isLoaded: true });
+      console.error('[Supabase]', getErrorMessage(error), error);
     }
-
-    set({
-      tasks: (data || []).map((task) => mapDbTaskToTask(task as TaskWithSubtasks)),
-      isLoaded: true,
-      error: null,
-    });
   },
 
   initRealtime: () => {
     clearRealtimeChannels();
     void get().reloadTasks();
 
+    if (!isSupabaseConfigured()) {
+      return clearRealtimeChannels;
+    }
+
+    const supabase = getSupabaseClient();
     const tasksChannel = supabase
       .channel('dashboard-tasks')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
@@ -208,8 +295,37 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
 
     const subtasksChannel = supabase
       .channel('dashboard-subtasks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, () => {
-        void get().reloadTasks();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const oldSubtask = payload.old as Partial<SubtaskRow>;
+          const oldSubtaskId = oldSubtask.id;
+          if (oldSubtaskId) {
+            set((state) => ({
+              tasks: removeSubtaskFromTasks(state.tasks, oldSubtaskId),
+              error: null,
+            }));
+          }
+          return;
+        }
+
+        const subtaskRow = payload.new as SubtaskRow;
+        if (!subtaskRow?.id || !subtaskRow.task_id) {
+          void get().reloadTasks();
+          return;
+        }
+
+        console.info('[Supabase Realtime] public.subtasks', {
+          event: payload.eventType,
+          subtaskId: subtaskRow.id,
+          taskId: subtaskRow.task_id,
+          completed: subtaskRow.completed,
+        });
+
+        rememberConfirmedSubtaskCompletion(subtaskRow.id, subtaskRow.completed);
+        set((state) => ({
+          tasks: mergeSubtaskIntoTasks(state.tasks, subtaskRow),
+          error: null,
+        }));
       })
       .subscribe();
 
@@ -218,6 +334,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     return clearRealtimeChannels;
   },
 
+  clearError: () => set({ error: null }),
   selectTask: (id) => set({ selectedTaskId: id }),
   setCurrentView: (view) => set({ currentView: view }),
   setCurrentDate: (date) => set({ currentDate: date }),
@@ -225,20 +342,31 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
 
   addTask: async (newTaskData) => {
     const id = uuidv4();
-    const newTask: Task = {
-      ...newTaskData,
-      id,
-      subtasks: [],
-      empresa: newTaskData.empresa || 'Empresa A',
-      prioridad: newTaskData.prioridad || 'Media',
-    };
+    const insertPayload = taskToInsert(id, newTaskData);
 
-    await withRevertedTasks(
-      () => set((state) => ({ tasks: [...state.tasks, newTask] })),
-      () => supabase.from('tasks').insert(taskToInsert(id, newTaskData)),
-      set,
-      get,
-    );
+    try {
+      console.info('[Supabase] INSERT public.tasks', insertPayload);
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.from('tasks').insert(insertPayload).select('*, subtasks(*)').single();
+
+      if (error) {
+        failWithStoreError(error, set);
+      }
+
+      if (!data) {
+        failWithStoreError(new Error('Supabase no devolvió la tarea creada.'), set);
+      }
+
+      const createdTask = mapDbTaskToTask(data as TaskWithSubtasks);
+      set((state) => ({
+        tasks: [...state.tasks.filter((task) => task.id !== createdTask.id), createdTask],
+        selectedTaskId: createdTask.id,
+        error: null,
+      }));
+      void get().reloadTasks();
+    } catch (error) {
+      failWithStoreError(error, set);
+    }
   },
 
   updateTask: async (taskId, updates) => {
@@ -247,7 +375,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
         set((state) => ({
           tasks: state.tasks.map((task) => (task.id === taskId ? { ...task, ...updates } : task)),
         })),
-      () => supabase.from('tasks').update(taskUpdatesToDb(updates)).eq('id', taskId),
+      () => getSupabaseClient().from('tasks').update(taskUpdatesToDb(updates)).eq('id', taskId).select('id').single(),
       set,
       get,
     );
@@ -260,7 +388,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
           tasks: state.tasks.filter((task) => task.id !== taskId),
           selectedTaskId: state.selectedTaskId === taskId ? null : state.selectedTaskId,
         })),
-      () => supabase.from('tasks').delete().eq('id', taskId),
+      () => getSupabaseClient().from('tasks').delete().eq('id', taskId),
       set,
       get,
     );
@@ -268,25 +396,38 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
 
   addSubtask: async (taskId, title) => {
     const id = uuidv4();
-    const newSubtask: Subtask = { id, title, completed: false };
+    const insertPayload = {
+      id,
+      task_id: taskId,
+      title,
+      completed: false,
+    };
 
-    await withRevertedTasks(
-      () =>
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
-            task.id === taskId ? { ...task, subtasks: [...task.subtasks, newSubtask] } : task,
-          ),
-        })),
-      () =>
-        supabase.from('subtasks').insert({
-          id,
-          task_id: taskId,
-          title,
-          completed: false,
-        }),
-      set,
-      get,
-    );
+    try {
+      console.info('[Supabase] INSERT public.subtasks', insertPayload);
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.from('subtasks').insert(insertPayload).select('*').single();
+
+      if (error) {
+        failWithStoreError(error, set);
+      }
+
+      if (!data) {
+        failWithStoreError(new Error('Supabase no devolvió la subtarea creada.'), set);
+      }
+
+      const newSubtask: Subtask = mapDbSubtaskToSubtask(data as SubtaskRow);
+      rememberConfirmedSubtaskCompletion(newSubtask.id, newSubtask.completed);
+      set((state) => ({
+        tasks: state.tasks.map((task) =>
+          task.id === taskId ? { ...task, subtasks: [...task.subtasks.filter((st) => st.id !== id), newSubtask] } : task,
+        ),
+        error: null,
+      }));
+      void get().reloadTasks();
+    } catch (error) {
+      failWithStoreError(error, set);
+    }
   },
 
   toggleSubtask: async (taskId, subtaskId) => {
@@ -294,26 +435,62 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     const subtask = task?.subtasks.find((item) => item.id === subtaskId);
     if (!subtask) return;
 
-    const completed = !subtask.completed;
+    const nextCompleted = !subtask.completed;
 
-    await withRevertedTasks(
-      () =>
-        set((state) => ({
-          tasks: state.tasks.map((item) =>
-            item.id === taskId
-              ? {
-                  ...item,
-                  subtasks: item.subtasks.map((candidate) =>
-                    candidate.id === subtaskId ? { ...candidate, completed } : candidate,
-                  ),
-                }
-              : item,
-          ),
-        })),
-      () => supabase.from('subtasks').update({ completed }).eq('id', subtaskId),
-      set,
-      get,
-    );
+    console.info('[Supabase] UPDATE public.subtasks.completed', {
+      taskId,
+      subtaskId,
+      previousCompleted: subtask.completed,
+      nextCompleted,
+    });
+
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from('subtasks')
+        .update({ completed: nextCompleted })
+        .eq('id', subtaskId)
+        .eq('task_id', taskId)
+        .select('*')
+        .single();
+
+      if (error) {
+        failWithStoreError(error, set);
+      }
+
+      if (!data) {
+        failWithStoreError(new Error('Supabase no devolvió la subtarea actualizada.'), set);
+      }
+
+      const updatedSubtask = data as SubtaskRow;
+
+      if (updatedSubtask.completed !== nextCompleted) {
+        failWithStoreError(
+          new Error(`Supabase devolvió completed=${updatedSubtask.completed} al intentar guardar completed=${nextCompleted}.`),
+          set,
+        );
+      }
+
+      rememberConfirmedSubtaskCompletion(updatedSubtask.id, updatedSubtask.completed);
+      set((state) => {
+        const tasks = mergeSubtaskIntoTasks(state.tasks, updatedSubtask);
+        const updatedTask = tasks.find((item) => item.id === taskId);
+        const completedCount = updatedTask?.subtasks.filter((item) => item.completed).length || 0;
+        const totalCount = updatedTask?.subtasks.length || 0;
+
+        console.info('[Zustand] public.subtasks.completed applied', {
+          taskId,
+          subtaskId,
+          completed: updatedSubtask.completed,
+          completedCount,
+          totalCount,
+          progress: totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100),
+        });
+
+        return { tasks, error: null };
+      });
+    } catch (error) {
+      failWithStoreError(error, set);
+    }
   },
 
   editSubtask: async (taskId, subtaskId, newTitle) => {
@@ -331,7 +508,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
               : task,
           ),
         })),
-      () => supabase.from('subtasks').update({ title: newTitle }).eq('id', subtaskId),
+      () => getSupabaseClient().from('subtasks').update({ title: newTitle }).eq('id', subtaskId).select('id').single(),
       set,
       get,
     );
@@ -347,7 +524,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
               : task,
           ),
         })),
-      () => supabase.from('subtasks').delete().eq('id', subtaskId),
+      () => getSupabaseClient().from('subtasks').delete().eq('id', subtaskId),
       set,
       get,
     );

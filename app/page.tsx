@@ -11,10 +11,10 @@ import { Timeline } from '@/components/Timeline';
 import { TaskPanel } from '@/components/TaskPanel';
 
 export default function Home() {
-  const { currentView, initRealtime, isLoaded } = useDashboardStore();
+  const { currentView, initRealtime, isLoaded, error, clearError } = useDashboardStore();
 
   useEffect(() => {
-    initRealtime();
+    return initRealtime();
   }, [initRealtime]);
 
   if (!isLoaded) {
@@ -33,6 +33,18 @@ export default function Home() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden h-screen">
         <Header />
+        {error && (
+          <div className="mx-8 mt-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fecaca] flex items-start justify-between gap-4">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={clearError}
+              className="text-[#fecaca]/80 hover:text-white transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
         <main className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           <div className="max-w-[1600px] mx-auto flex flex-col gap-6">
             {/* Top KPIs - Always visible */}

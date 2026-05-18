@@ -3,7 +3,7 @@ create table if not exists public.tasks (
   title text not null,
   description text,
   assignee jsonb not null,
-  due_date text not null,
+  due_date date not null,
   date_block date not null,
   empresa text not null default 'Empresa A',
   prioridad text not null default 'Media' check (prioridad in ('Alta', 'Media', 'Baja')),
