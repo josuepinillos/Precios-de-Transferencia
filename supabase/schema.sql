@@ -45,54 +45,61 @@ execute function public.set_updated_at();
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
 
+alter table public.tasks replica identity full;
+alter table public.subtasks replica identity full;
+
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on table public.tasks to anon, authenticated;
+grant select, insert, update, delete on table public.subtasks to anon, authenticated;
+
 drop policy if exists "Allow public task reads" on public.tasks;
 create policy "Allow public task reads"
 on public.tasks for select
-to anon
+to anon, authenticated
 using (true);
 
 drop policy if exists "Allow public task inserts" on public.tasks;
 create policy "Allow public task inserts"
 on public.tasks for insert
-to anon
+to anon, authenticated
 with check (true);
 
 drop policy if exists "Allow public task updates" on public.tasks;
 create policy "Allow public task updates"
 on public.tasks for update
-to anon
+to anon, authenticated
 using (true)
 with check (true);
 
 drop policy if exists "Allow public task deletes" on public.tasks;
 create policy "Allow public task deletes"
 on public.tasks for delete
-to anon
+to anon, authenticated
 using (true);
 
 drop policy if exists "Allow public subtask reads" on public.subtasks;
 create policy "Allow public subtask reads"
 on public.subtasks for select
-to anon
+to anon, authenticated
 using (true);
 
 drop policy if exists "Allow public subtask inserts" on public.subtasks;
 create policy "Allow public subtask inserts"
 on public.subtasks for insert
-to anon
+to anon, authenticated
 with check (true);
 
 drop policy if exists "Allow public subtask updates" on public.subtasks;
 create policy "Allow public subtask updates"
 on public.subtasks for update
-to anon
+to anon, authenticated
 using (true)
 with check (true);
 
 drop policy if exists "Allow public subtask deletes" on public.subtasks;
 create policy "Allow public subtask deletes"
 on public.subtasks for delete
-to anon
+to anon, authenticated
 using (true);
 
 do $$
