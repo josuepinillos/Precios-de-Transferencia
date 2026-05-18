@@ -58,6 +58,8 @@ interface DashboardState {
 }
 
 let realtimeChannels: RealtimeChannel[] = [];
+const recentSubtaskCompletions = new Map<string, { completed: boolean; confirmedAt: number }>();
+const RECENT_CONFIRMATION_MS = 10_000;
 
 const isAssignee = (value: unknown): value is Assignee => {
   if (!value || typeof value !== 'object') return false;
@@ -127,6 +129,51 @@ const mapDbTaskToTask = (task: TaskWithSubtasks): Task => ({
   prioridad: task.prioridad,
   subtasks: (task.subtasks || []).map(mapDbSubtaskToSubtask),
 });
+
+const rememberConfirmedSubtaskCompletion = (subtaskId: string, completed: boolean) => {
+  recentSubtaskCompletions.set(subtaskId, { completed, confirmedAt: Date.now() });
+};
+
+const applyRecentSubtaskConfirmations = (tasks: Task[]) => {
+  const now = Date.now();
+
+  return tasks.map((task) => ({
+    ...task,
+    subtasks: task.subtasks.map((subtask) => {
+      const recentCompletion = recentSubtaskCompletions.get(subtask.id);
+      if (!recentCompletion) return subtask;
+
+      if (now - recentCompletion.confirmedAt > RECENT_CONFIRMATION_MS) {
+        recentSubtaskCompletions.delete(subtask.id);
+        return subtask;
+      }
+
+      return { ...subtask, completed: recentCompletion.completed };
+    }),
+  }));
+};
+
+const mergeSubtaskIntoTasks = (tasks: Task[], subtaskRow: SubtaskRow) => {
+  const mappedSubtask = mapDbSubtaskToSubtask(subtaskRow);
+
+  return tasks.map((task) => {
+    if (task.id !== subtaskRow.task_id) return task;
+
+    const exists = task.subtasks.some((subtask) => subtask.id === subtaskRow.id);
+    return {
+      ...task,
+      subtasks: exists
+        ? task.subtasks.map((subtask) => (subtask.id === subtaskRow.id ? mappedSubtask : subtask))
+        : [...task.subtasks, mappedSubtask],
+    };
+  });
+};
+
+const removeSubtaskFromTasks = (tasks: Task[], subtaskId: string) =>
+  tasks.map((task) => ({
+    ...task,
+    subtasks: task.subtasks.filter((subtask) => subtask.id !== subtaskId),
+  }));
 
 const taskToInsert = (id: string, task: Omit<Task, 'id' | 'subtasks'>): TaskInsert => ({
   id,
@@ -220,7 +267,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
       }
 
       set({
-        tasks: (data || []).map((task) => mapDbTaskToTask(task as TaskWithSubtasks)),
+        tasks: applyRecentSubtaskConfirmations((data || []).map((task) => mapDbTaskToTask(task as TaskWithSubtasks))),
         isLoaded: true,
         error: null,
       });
@@ -248,8 +295,37 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
 
     const subtasksChannel = supabase
       .channel('dashboard-subtasks')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, () => {
-        void get().reloadTasks();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const oldSubtask = payload.old as Partial<SubtaskRow>;
+          const oldSubtaskId = oldSubtask.id;
+          if (oldSubtaskId) {
+            set((state) => ({
+              tasks: removeSubtaskFromTasks(state.tasks, oldSubtaskId),
+              error: null,
+            }));
+          }
+          return;
+        }
+
+        const subtaskRow = payload.new as SubtaskRow;
+        if (!subtaskRow?.id || !subtaskRow.task_id) {
+          void get().reloadTasks();
+          return;
+        }
+
+        console.info('[Supabase Realtime] public.subtasks', {
+          event: payload.eventType,
+          subtaskId: subtaskRow.id,
+          taskId: subtaskRow.task_id,
+          completed: subtaskRow.completed,
+        });
+
+        rememberConfirmedSubtaskCompletion(subtaskRow.id, subtaskRow.completed);
+        set((state) => ({
+          tasks: mergeSubtaskIntoTasks(state.tasks, subtaskRow),
+          error: null,
+        }));
       })
       .subscribe();
 
@@ -321,11 +397,11 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
   addSubtask: async (taskId, title) => {
     const id = uuidv4();
     const insertPayload = {
-          id,
-          task_id: taskId,
-          title,
-          completed: false,
-        };
+      id,
+      task_id: taskId,
+      title,
+      completed: false,
+    };
 
     try {
       console.info('[Supabase] INSERT public.subtasks', insertPayload);
@@ -341,6 +417,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
       }
 
       const newSubtask: Subtask = mapDbSubtaskToSubtask(data as SubtaskRow);
+      rememberConfirmedSubtaskCompletion(newSubtask.id, newSubtask.completed);
       set((state) => ({
         tasks: state.tasks.map((task) =>
           task.id === taskId ? { ...task, subtasks: [...task.subtasks.filter((st) => st.id !== id), newSubtask] } : task,
@@ -358,26 +435,62 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     const subtask = task?.subtasks.find((item) => item.id === subtaskId);
     if (!subtask) return;
 
-    const completed = !subtask.completed;
+    const nextCompleted = !subtask.completed;
 
-    await withRevertedTasks(
-      () =>
-        set((state) => ({
-          tasks: state.tasks.map((item) =>
-            item.id === taskId
-              ? {
-                  ...item,
-                  subtasks: item.subtasks.map((candidate) =>
-                    candidate.id === subtaskId ? { ...candidate, completed } : candidate,
-                  ),
-                }
-              : item,
-          ),
-        })),
-      () => getSupabaseClient().from('subtasks').update({ completed }).eq('id', subtaskId).select('id').single(),
-      set,
-      get,
-    );
+    console.info('[Supabase] UPDATE public.subtasks.completed', {
+      taskId,
+      subtaskId,
+      previousCompleted: subtask.completed,
+      nextCompleted,
+    });
+
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from('subtasks')
+        .update({ completed: nextCompleted })
+        .eq('id', subtaskId)
+        .eq('task_id', taskId)
+        .select('*')
+        .single();
+
+      if (error) {
+        failWithStoreError(error, set);
+      }
+
+      if (!data) {
+        failWithStoreError(new Error('Supabase no devolvió la subtarea actualizada.'), set);
+      }
+
+      const updatedSubtask = data as SubtaskRow;
+
+      if (updatedSubtask.completed !== nextCompleted) {
+        failWithStoreError(
+          new Error(`Supabase devolvió completed=${updatedSubtask.completed} al intentar guardar completed=${nextCompleted}.`),
+          set,
+        );
+      }
+
+      rememberConfirmedSubtaskCompletion(updatedSubtask.id, updatedSubtask.completed);
+      set((state) => {
+        const tasks = mergeSubtaskIntoTasks(state.tasks, updatedSubtask);
+        const updatedTask = tasks.find((item) => item.id === taskId);
+        const completedCount = updatedTask?.subtasks.filter((item) => item.completed).length || 0;
+        const totalCount = updatedTask?.subtasks.length || 0;
+
+        console.info('[Zustand] public.subtasks.completed applied', {
+          taskId,
+          subtaskId,
+          completed: updatedSubtask.completed,
+          completedCount,
+          totalCount,
+          progress: totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100),
+        });
+
+        return { tasks, error: null };
+      });
+    } catch (error) {
+      failWithStoreError(error, set);
+    }
   },
 
   editSubtask: async (taskId, subtaskId, newTitle) => {
