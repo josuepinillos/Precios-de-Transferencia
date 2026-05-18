@@ -17,36 +17,47 @@ const MOCK_USERS = Object.values(USERS);
 
 export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
   const addTask = useDashboardStore(state => state.addTask);
+  const storeError = useDashboardStore(state => state.error);
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dateBlock, setDateBlock] = useState(TIMELINE_DAYS[0].date);
   const [assigneeIdx, setAssigneeIdx] = useState(0);
   const [prioridad, setPrioridad] = useState<Priority | ''>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    const cleanTitle = title.trim();
+    if (!cleanTitle || isSaving) return;
 
-    const selectedDay = TIMELINE_DAYS.find(d => d.date === dateBlock);
-    
-    addTask({
-      title,
-      description,
-      dateBlock,
-      dueDate: selectedDay ? selectedDay.label : "Fecha sin asignar",
-      empresa: "Empresa A",
-      assignee: MOCK_USERS[assigneeIdx],
-      prioridad: prioridad || 'Media'
-    });
+    try {
+      setIsSaving(true);
+      setSubmitError(null);
+      await addTask({
+        title: cleanTitle,
+        description: description.trim(),
+        dateBlock,
+        dueDate: dateBlock,
+        empresa: "Empresa A",
+        assignee: MOCK_USERS[assigneeIdx],
+        prioridad: prioridad || 'Media'
+      });
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setDateBlock(TIMELINE_DAYS[0].date);
-    setAssigneeIdx(0);
-    setPrioridad('');
-    onClose();
+      setTitle('');
+      setDescription('');
+      setDateBlock(TIMELINE_DAYS[0].date);
+      setAssigneeIdx(0);
+      setPrioridad('');
+      onClose();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo crear la tarea en Supabase.';
+      setSubmitError(message);
+      console.error('[Supabase] No se pudo crear la tarea:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -77,6 +88,12 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
               <h2 className="text-xl font-bold text-white mb-6">Nueva Tarea</h2>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                {(submitError || storeError) && (
+                  <div className="rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fecaca]">
+                    {submitError || storeError}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Título de la Tarea *</label>
                   <input 
@@ -151,9 +168,10 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                   </button>
                   <button 
                     type="submit"
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#506ff0] hover:bg-[#3f5bc4] transition-colors shadow-lg"
+                    disabled={isSaving}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#506ff0] hover:bg-[#3f5bc4] transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Crear Tarea
+                    {isSaving ? 'Guardando...' : 'Crear Tarea'}
                   </button>
                 </div>
               </form>

@@ -85,21 +85,32 @@ export type Database = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const fallbackUrl = 'https://example.supabase.co';
-const fallbackKey = 'missing-supabase-anon-key';
+let browserClient: ReturnType<typeof createClient<Database>> | null = null;
 
-if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseKey)) {
-  console.warn('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-}
+export const isSupabaseConfigured = () => Boolean(supabaseUrl && supabaseKey);
 
-export const supabase = createClient<Database>(
-  supabaseUrl || fallbackUrl,
-  supabaseKey || fallbackKey,
-  {
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
+export const getSupabaseClient = () => {
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
+
+  if (!browserClient) {
+    browserClient = createClient<Database>(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
-    },
-  },
-);
+      db: {
+        schema: 'public',
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    });
+  }
+
+  return browserClient;
+};
