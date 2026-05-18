@@ -9,7 +9,7 @@ const DAYS_OF_WEEK = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 // Generate days for the grid (May 10 to June 6, 2026 to match mockup)
 const generateDays = () => {
   const days = [];
-  let d = new Date(2026, 4, 10); // May 10, 2026
+  const d = new Date(2026, 4, 10); // May 10, 2026
   for (let i = 0; i < 28; i++) {
     days.push({
       date: new Date(d),

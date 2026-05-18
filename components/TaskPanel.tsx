@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { X, Calendar as CalendarIcon, MessageSquare, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -44,13 +44,14 @@ export const TaskPanel = () => {
   // Sync state when task changes
   useEffect(() => {
     if (selectedTask) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditTitle(selectedTask.title);
       setEditDesc(selectedTask.description);
       setIsEditing(false);
       setIsAddingSubtask(false);
       setNewSubtaskTitle('');
     }
-  }, [selectedTaskId, selectedTask?.title, selectedTask?.description]);
+  }, [selectedTask]);
 
   if (!selectedTask) return null;
 

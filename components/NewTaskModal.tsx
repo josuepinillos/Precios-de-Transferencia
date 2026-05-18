@@ -6,6 +6,8 @@ import { X } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { TIMELINE_DAYS, USERS } from '../data/mockData';
 
+type Priority = 'Alta' | 'Media' | 'Baja';
+
 interface NewTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -20,7 +22,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
   const [description, setDescription] = useState('');
   const [dateBlock, setDateBlock] = useState(TIMELINE_DAYS[0].date);
   const [assigneeIdx, setAssigneeIdx] = useState(0);
-  const [prioridad, setPrioridad] = useState<'Alta' | 'Media' | 'Baja' | ''>('');
+  const [prioridad, setPrioridad] = useState<Priority | ''>('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +37,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
       dueDate: selectedDay ? selectedDay.label : "Fecha sin asignar",
       empresa: "Empresa A",
       assignee: MOCK_USERS[assigneeIdx],
-      prioridad: prioridad ? (prioridad as any) : undefined
+      prioridad: prioridad || 'Media'
     });
 
     // Reset form
@@ -115,7 +117,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                     <label className="block text-xs font-medium text-slate-400 mb-1">Prioridad</label>
                     <select 
                       value={prioridad}
-                      onChange={(e) => setPrioridad(e.target.value as any)}
+                      onChange={(e) => setPrioridad(e.target.value as Priority | '')}
                       className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
                     >
                       <option value="">Normal (Ninguna)</option>

@@ -10,11 +10,17 @@ import {
 } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
+type ViewId = 'dashboard' | 'timeline' | 'calendar';
+
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
   { icon: ListTree, label: 'Timeline', id: 'timeline' },
   { icon: Calendar, label: 'Calendario', id: 'calendar' },
-];
+] satisfies Array<{
+  icon: typeof LayoutDashboard;
+  label: string;
+  id: ViewId;
+}>;
 
 export const Sidebar = () => {
   const { currentView, setCurrentView } = useDashboardStore();
@@ -40,9 +46,7 @@ export const Sidebar = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (['dashboard', 'timeline', 'calendar'].includes(item.id)) {
-                    setCurrentView(item.id as any);
-                  }
+                  setCurrentView(item.id);
                 }}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                   isActive 
