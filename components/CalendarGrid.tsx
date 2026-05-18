@@ -44,18 +44,18 @@ export const CalendarGrid = () => {
   };
 
   return (
-    <div className="bg-[#0e121e]/80 backdrop-blur-xl border border-[#1e253c] rounded-2xl p-6 h-full flex flex-col">
+    <div className="bg-[#0e121e]/80 backdrop-blur-xl border border-[#1e253c] rounded-2xl p-3 sm:p-4 lg:p-6 h-auto min-h-[520px] xl:h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-7 mb-4">
+      <div className="grid grid-cols-7 mb-3 sm:mb-4">
         {DAYS_OF_WEEK.map(day => (
-          <div key={day} className="text-center text-xs font-semibold text-slate-400 tracking-wider">
+          <div key={day} className="text-center text-[10px] sm:text-xs font-semibold text-slate-400 tracking-wider">
             {day}
           </div>
         ))}
       </div>
 
       {/* Grid */}
-      <div className="flex-1 grid grid-cols-7 grid-rows-4 gap-3">
+      <div className="flex-1 grid grid-cols-7 grid-rows-4 gap-1.5 sm:gap-2 lg:gap-3">
         {CALENDAR_DAYS.map((dayInfo, i) => {
           const dayTasks = getTasksForDate(dayInfo.dateString);
           const isSelected = currentDate === dayInfo.dateString;
@@ -67,22 +67,22 @@ export const CalendarGrid = () => {
               whileHover={{ scale: 1.02 }}
               onClick={() => setCurrentDate(dayInfo.dateString)}
               className={`
-                relative rounded-xl p-3 flex flex-col cursor-pointer transition-colors
+                relative rounded-lg sm:rounded-xl p-1.5 sm:p-2 lg:p-3 min-h-[88px] sm:min-h-[104px] flex flex-col cursor-pointer transition-colors
                 ${isSelected ? 'bg-gradient-to-br from-[#1e253c] to-[#2a334e] border border-[#506ff0]/50 shadow-[0_0_15px_rgba(80,111,240,0.15)]' : 'bg-[#121827] border border-[#1e253c] hover:border-[#2a334e]'}
                 ${!dayInfo.isCurrentMonth ? 'opacity-50' : ''}
               `}
             >
               <div className="flex justify-between items-start mb-2">
-                <span className={`text-lg font-bold ${isToday ? 'text-white' : 'text-slate-300'}`}>
+                <span className={`text-sm sm:text-base lg:text-lg font-bold ${isToday ? 'text-white' : 'text-slate-300'}`}>
                   {dayInfo.day}
                 </span>
                 {isToday && (
-                  <span className="text-[10px] font-bold text-[#506ff0] uppercase tracking-wider">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-[#506ff0] uppercase tracking-wider">
                     {dayInfo.month}
                   </span>
                 )}
                 {isSelected && !isToday && (
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     {dayInfo.month}
                   </span>
                 )}
@@ -90,14 +90,14 @@ export const CalendarGrid = () => {
 
               {dayTasks.length > 0 && (
                 <div className="mt-auto">
-                  <div className="text-xs text-slate-400 mb-2">
+                  <div className="text-[10px] sm:text-xs text-slate-400 mb-2 leading-tight">
                     {dayTasks.length} {dayTasks.length === 1 ? 'tarea' : 'tareas'}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {dayTasks.map(task => (
                       <div 
                         key={task.id}
-                        className={`w-2.5 h-2.5 rounded-full ${getTaskStatusColor(task.id, task.dueDate)}`}
+                        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${getTaskStatusColor(task.id, task.dueDate)}`}
                         title={task.title}
                       />
                     ))}
@@ -110,7 +110,7 @@ export const CalendarGrid = () => {
       </div>
       
       {/* Legend */}
-      <div className="mt-6 flex items-center justify-center gap-8 text-sm text-slate-400">
+      <div className="mt-4 sm:mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-5 lg:gap-8 text-xs sm:text-sm text-slate-400">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
           <span>Completadas</span>

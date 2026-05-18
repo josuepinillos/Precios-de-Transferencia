@@ -49,10 +49,10 @@ export const Charts = () => {
     .slice(0, 3);
 
   return (
-    <div className="grid grid-cols-4 gap-4 mt-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 mt-4 sm:mt-6">
       
       {/* Bar Chart */}
-      <div className="glass rounded-2xl p-5 col-span-1 border border-[#1e253c]">
+      <div className="glass rounded-2xl p-4 sm:p-5 border border-[#1e253c]">
         <h3 className="text-sm text-slate-300 font-medium mb-4">Avance por día (Tareas programadas)</h3>
         <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
@@ -71,7 +71,7 @@ export const Charts = () => {
       </div>
 
       {/* Donut Chart (Overall Progress) */}
-      <div className="glass rounded-2xl p-5 col-span-1 border border-[#1e253c] flex flex-col items-center justify-center relative">
+      <div className="glass rounded-2xl p-4 sm:p-5 border border-[#1e253c] flex flex-col items-center justify-center relative min-h-[220px]">
         <h3 className="text-sm text-slate-300 font-medium mb-2 absolute top-5 left-5">Avance general</h3>
         <div className="relative w-32 h-32 mt-4">
           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
@@ -97,7 +97,7 @@ export const Charts = () => {
       </div>
 
       {/* Pie Chart (Task Status) */}
-      <div className="glass rounded-2xl p-5 col-span-1 border border-[#1e253c] flex">
+      <div className="glass rounded-2xl p-4 sm:p-5 border border-[#1e253c] flex">
         <div className="flex-1 flex flex-col justify-center">
           <h3 className="text-sm text-slate-300 font-medium mb-4">Estado de tareas</h3>
           <ul className="flex flex-col gap-3">
@@ -133,7 +133,7 @@ export const Charts = () => {
       </div>
 
       {/* Critical Tasks List */}
-      <div className="glass rounded-2xl p-5 col-span-1 border border-[#1e253c]">
+      <div className="glass rounded-2xl p-4 sm:p-5 border border-[#1e253c]">
         <h3 className="text-sm text-slate-300 font-medium mb-4">Próximas tareas críticas</h3>
         <div className="flex flex-col gap-3">
           {criticalTasks.length > 0 ? (

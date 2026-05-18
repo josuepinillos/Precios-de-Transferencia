@@ -29,12 +29,12 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0b0f19] text-white overflow-hidden">
+    <div className="flex min-h-screen bg-[#0b0f19] text-white overflow-x-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden h-screen">
+      <div className="min-w-0 flex-1 flex flex-col overflow-hidden min-h-screen lg:h-screen pt-16 md:pt-0">
         <Header />
         {error && (
-          <div className="mx-8 mt-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fecaca] flex items-start justify-between gap-4">
+          <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fecaca] flex items-start justify-between gap-4">
             <span>{error}</span>
             <button
               type="button"
@@ -45,16 +45,16 @@ export default function Home() {
             </button>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-          <div className="max-w-[1600px] mx-auto flex flex-col gap-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6 scrollbar-hide">
+          <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6">
             {/* Top KPIs - Always visible */}
             <KPICards />
             
             {/* Dynamic Content based on currentView */}
             {currentView === 'dashboard' && (
               <>
-                <div className="flex gap-6 h-[600px]">
-                  <div className="flex-1 overflow-hidden">
+                <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 xl:h-[600px]">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <Timeline />
                   </div>
                   <TaskPanel />

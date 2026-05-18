@@ -100,10 +100,10 @@ export const TaskPanel = () => {
   return (
     <AnimatePresence>
       <motion.div 
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 20 }}
-        className="w-[350px] flex-shrink-0 glass rounded-2xl p-6 flex flex-col h-[600px] relative"
+        initial={{ opacity: 0, y: 24, x: 0 }}
+        animate={{ opacity: 1, y: 0, x: 0 }}
+        exit={{ opacity: 0, y: 24, x: 0 }}
+        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full glass rounded-t-2xl border border-[#1e253c] p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:w-[350px] xl:h-full xl:flex-shrink-0 xl:p-6"
       >
         <div className="flex justify-between items-start mb-6 gap-2">
           {isEditing ? (
@@ -111,7 +111,7 @@ export const TaskPanel = () => {
               type="text" 
               value={editTitle} 
               onChange={(e) => setEditTitle(e.target.value)}
-              className="flex-1 bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-2 py-1 outline-none text-lg font-bold"
+              className="min-w-0 flex-1 bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-3 py-2 outline-none text-base sm:text-lg font-bold"
               autoFocus
             />
           ) : (
@@ -120,11 +120,11 @@ export const TaskPanel = () => {
           
           <div className="flex items-center gap-1">
             {!isEditing && (
-              <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-white p-1">
+              <button onClick={() => setIsEditing(true)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-[#1e253c]">
                 <Edit2 size={16} />
               </button>
             )}
-            <button onClick={() => selectTask(null)} className="text-slate-400 hover:text-white p-1">
+            <button onClick={() => selectTask(null)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-[#1e253c]">
               <X size={20} />
             </button>
           </div>
@@ -144,7 +144,7 @@ export const TaskPanel = () => {
               <textarea 
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-2 py-2 outline-none text-sm resize-none h-24"
+                className="w-full bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-3 py-3 sm:py-2 outline-none text-sm resize-none h-24"
               />
             ) : (
               <p className="text-sm text-slate-300 leading-relaxed">
@@ -155,13 +155,13 @@ export const TaskPanel = () => {
 
           {isEditing && (
             <div className="flex justify-end gap-2 mb-6">
-              <button onClick={() => setIsEditing(false)} className="text-xs px-3 py-1.5 text-slate-400 hover:text-white">Cancelar</button>
-              <button onClick={handleSaveEdit} className="text-xs px-3 py-1.5 bg-[#506ff0] text-white rounded-lg flex items-center gap-1"><Check size={14}/> Guardar</button>
+              <button onClick={() => setIsEditing(false)} className="text-xs px-3 py-2.5 sm:py-1.5 text-slate-400 hover:text-white">Cancelar</button>
+              <button onClick={handleSaveEdit} className="text-xs px-3 py-2.5 sm:py-1.5 bg-[#506ff0] text-white rounded-lg flex items-center gap-1"><Check size={14}/> Guardar</button>
             </div>
           )}
 
           {/* Meta Info */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <h3 className="text-xs text-slate-400 font-medium mb-2">Responsable</h3>
               <div className="flex items-center gap-2">
@@ -177,7 +177,7 @@ export const TaskPanel = () => {
               <h3 className="text-xs text-slate-400 font-medium mb-2">Fecha límite</h3>
               <div className="flex items-center gap-2 text-slate-300 text-sm">
                 <CalendarIcon size={14} className="text-slate-400" />
-                {selectedTask.dueDate}
+                  <span className="break-words">{selectedTask.dueDate}</span>
               </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ export const TaskPanel = () => {
               {selectedTask.subtasks.map(subtask => (
                 <div 
                   key={subtask.id} 
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors group"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors group"
                 >
                   {editingSubtaskId === subtask.id ? (
                     <form 
@@ -224,18 +224,18 @@ export const TaskPanel = () => {
                         autoFocus
                         value={editingSubtaskTitle}
                         onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                        className="flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-2 py-1 outline-none"
+                        className="min-w-0 flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-3 py-2 outline-none"
                       />
                       <button 
                         type="submit" 
-                        className="p-1 text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
+                        className="w-9 h-9 flex items-center justify-center text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
                       >
                         <Check size={14} />
                       </button>
                       <button 
                         type="button" 
                         onClick={() => setEditingSubtaskId(null)}
-                        className="p-1 text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
                       >
                         <X size={14} />
                       </button>
@@ -243,7 +243,7 @@ export const TaskPanel = () => {
                   ) : (
                     <>
                       <div 
-                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        className="min-w-0 flex items-center gap-3 flex-1 cursor-pointer py-1"
                         onClick={() => {
                           void toggleSubtask(selectedTask.id, subtask.id).catch((error) => {
                             console.error('[Supabase] No se pudo actualizar la subtarea:', error);
@@ -259,14 +259,14 @@ export const TaskPanel = () => {
                           {subtask.completed && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                         </div>
                         <span className={clsx(
-                          "text-sm transition-colors",
+                          "text-sm transition-colors break-words",
                           subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
                         )}>
                           {subtask.title}
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
@@ -274,7 +274,7 @@ export const TaskPanel = () => {
                             setEditingSubtaskTitle(subtask.title);
                             setConfirmDeleteId(null);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
                           title="Editar subtarea"
                         >
                           <Pencil size={14} />
@@ -307,15 +307,15 @@ export const TaskPanel = () => {
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   placeholder="Nombre de la subtarea..."
-                  className="flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-2 text-sm outline-none focus:border-[#506ff0]"
+                  className="min-w-0 flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
                 />
-                <button type="button" onClick={() => setIsAddingSubtask(false)} className="p-2 text-slate-400 hover:text-white"><X size={16}/></button>
-                <button type="submit" disabled={isSavingSubtask} className="p-2 bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
+                <button type="button" onClick={() => setIsAddingSubtask(false)} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white"><X size={16}/></button>
+                <button type="submit" disabled={isSavingSubtask} className="w-11 h-11 flex items-center justify-center bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
               </form>
             ) : (
               <button 
                 onClick={() => setIsAddingSubtask(true)}
-                className="mt-4 flex items-center gap-2 px-4 py-2 bg-[#1e253c] hover:bg-[#506ff0] text-white text-sm rounded-lg transition-colors w-full justify-center"
+                className="mt-4 flex items-center gap-2 px-4 py-3 sm:py-2 bg-[#1e253c] hover:bg-[#506ff0] text-white text-sm rounded-lg transition-colors w-full justify-center"
               >
                 <Plus size={16} /> Agregar Subtarea
               </button>

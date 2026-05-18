@@ -80,16 +80,16 @@ export const KPICards = () => {
   ];
 
   return (
-    <div className="flex gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3 sm:gap-4 mb-4 sm:mb-6">
       {cards.map((card, idx) => (
-        <div key={idx} className="glass rounded-2xl p-4 min-w-[160px] flex-shrink-0 flex flex-col justify-between hover:bg-[#1e253c]/80 transition-colors shadow-lg">
+        <div key={idx} className="glass rounded-2xl p-4 min-h-[112px] flex flex-col justify-between hover:bg-[#1e253c]/80 transition-colors shadow-lg">
           <div className="flex items-center gap-3 mb-3">
             {card.icon && (
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${card.iconBg}`}>
+              <div className={`w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center ${card.iconBg}`}>
                 {card.icon}
               </div>
             )}
-            <span className="text-xs text-slate-400 font-medium leading-tight max-w-[80px]">{card.title}</span>
+            <span className="text-xs text-slate-400 font-medium leading-tight">{card.title}</span>
           </div>
           <div className="flex items-end justify-between">
             <span className="text-2xl font-bold text-white">{card.value}</span>
