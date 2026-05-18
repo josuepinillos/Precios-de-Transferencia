@@ -8,7 +8,7 @@ import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
 
 export const CalendarMain = () => {
-  const { currentView, setCurrentView, filters, setFilters } = useDashboardStore();
+  const { filters, setFilters } = useDashboardStore();
 
   return (
     <div className="flex flex-col gap-6">
