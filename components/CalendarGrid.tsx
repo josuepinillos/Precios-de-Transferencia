@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { motion } from 'framer-motion';
+import clsx from 'clsx';
 
 const DAYS_OF_WEEK = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
@@ -26,7 +27,10 @@ const generateDays = () => {
 const CALENDAR_DAYS = generateDays();
 
 export const CalendarGrid = () => {
-  const { getFilteredTasks, getTaskProgress, currentDate, setCurrentDate } = useDashboardStore();
+  const { tasks, getFilteredTasks, getTaskProgress, currentDate, setCurrentDate, updateTask } = useDashboardStore();
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dropTargetDate, setDropTargetDate] = useState<string | null>(null);
+  const filteredTasks = getFilteredTasks();
 
   const getTaskStatusColor = (taskId: string, dueDate: string) => {
     const progress = getTaskProgress(taskId);
@@ -40,7 +44,41 @@ export const CalendarGrid = () => {
   };
 
   const getTasksForDate = (dateString: string) => {
-    return getFilteredTasks().filter(t => t.dateBlock === dateString);
+    return filteredTasks.filter(t => t.dateBlock === dateString);
+  };
+
+  const moveTaskToDate = async (taskId: string, targetDate: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task || task.dateBlock === targetDate) return;
+
+    try {
+      await updateTask(taskId, {
+        dateBlock: targetDate,
+        dueDate: targetDate,
+      });
+    } catch (error) {
+      console.error('[Supabase] No se pudo mover la tarea desde calendario:', error);
+    }
+  };
+
+  const handleDragStart = (event: React.DragEvent<HTMLButtonElement>, taskId: string) => {
+    event.stopPropagation();
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('application/x-dashboard-task-id', taskId);
+    event.dataTransfer.setData('text/plain', taskId);
+    setDraggedTaskId(taskId);
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLDivElement>, targetDate: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const taskId = event.dataTransfer.getData('application/x-dashboard-task-id') || event.dataTransfer.getData('text/plain');
+    setDropTargetDate(null);
+    setDraggedTaskId(null);
+
+    if (taskId) {
+      await moveTaskToDate(taskId, targetDate);
+    }
   };
 
   return (
@@ -60,17 +98,34 @@ export const CalendarGrid = () => {
           const dayTasks = getTasksForDate(dayInfo.dateString);
           const isSelected = currentDate === dayInfo.dateString;
           const isToday = dayInfo.dateString === '2026-05-16'; // Assuming 16 May is "Today" in mockup
+          const isDropTarget = dropTargetDate === dayInfo.dateString;
 
           return (
             <motion.div 
               key={i}
               whileHover={{ scale: 1.02 }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                setDropTargetDate(dayInfo.dateString);
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setDropTargetDate(null);
+                }
+              }}
+              onDrop={(event) => {
+                void handleDrop(event, dayInfo.dateString);
+              }}
               onClick={() => setCurrentDate(dayInfo.dateString)}
-              className={`
+              className={clsx(
+                `
                 relative rounded-lg sm:rounded-xl p-1.5 sm:p-2 lg:p-3 min-h-[88px] sm:min-h-[104px] flex flex-col cursor-pointer transition-colors
                 ${isSelected ? 'bg-gradient-to-br from-[#1e253c] to-[#2a334e] border border-[#506ff0]/50 shadow-[0_0_15px_rgba(80,111,240,0.15)]' : 'bg-[#121827] border border-[#1e253c] hover:border-[#2a334e]'}
                 ${!dayInfo.isCurrentMonth ? 'opacity-50' : ''}
-              `}
+              `,
+                isDropTarget && 'border-[#506ff0] bg-[#506ff0]/10 shadow-[0_0_20px_rgba(80,111,240,0.22)]',
+              )}
             >
               <div className="flex justify-between items-start mb-2">
                 <span className={`text-sm sm:text-base lg:text-lg font-bold ${isToday ? 'text-white' : 'text-slate-300'}`}>
@@ -93,15 +148,37 @@ export const CalendarGrid = () => {
                   <div className="text-[10px] sm:text-xs text-slate-400 mb-2 leading-tight">
                     {dayTasks.length} {dayTasks.length === 1 ? 'tarea' : 'tareas'}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex max-h-[70px] flex-col gap-1.5 overflow-y-auto scrollbar-hide">
                     {dayTasks.map(task => (
-                      <div 
+                      <button
                         key={task.id}
-                        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${getTaskStatusColor(task.id, task.dueDate)}`}
+                        type="button"
+                        draggable
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setCurrentDate(dayInfo.dateString);
+                        }}
+                        onDragStart={(event) => handleDragStart(event, task.id)}
+                        onDragEnd={() => {
+                          setDraggedTaskId(null);
+                          setDropTargetDate(null);
+                        }}
+                        className={clsx(
+                          "flex min-w-0 items-center gap-1.5 rounded-md border border-[#1e253c] bg-[#0e121e]/70 px-1.5 py-1 text-left text-[10px] text-slate-300 transition-all hover:border-[#506ff0]/60 cursor-grab active:cursor-grabbing",
+                          draggedTaskId === task.id && "opacity-60 border-[#8b5cf6] shadow-[0_0_14px_rgba(139,92,246,0.22)]",
+                        )}
                         title={task.title}
-                      />
+                      >
+                        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTaskStatusColor(task.id, task.dueDate)}`} />
+                        <span className="hidden min-w-0 truncate sm:block">{task.title}</span>
+                      </button>
                     ))}
                   </div>
+                </div>
+              )}
+              {isDropTarget && dayTasks.length === 0 && (
+                <div className="mt-auto rounded-lg border border-dashed border-[#506ff0]/60 bg-[#506ff0]/10 px-2 py-2 text-center text-[10px] text-[#93c5fd]">
+                  Soltar aquí
                 </div>
               )}
             </motion.div>

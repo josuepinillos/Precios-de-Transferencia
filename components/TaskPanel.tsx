@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
-import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil, MoveRight } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DatePicker2026 } from './DatePicker2026';
+import { DatePicker2026, formatPickerDate } from './DatePicker2026';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -28,6 +28,10 @@ export const TaskPanel = () => {
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
   const [editingSubtaskAssigneeName, setEditingSubtaskAssigneeName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveDateBlock, setMoveDateBlock] = useState('2026-05-16');
+  const [moveDateError, setMoveDateError] = useState<string | null>(null);
+  const [isMovingTask, setIsMovingTask] = useState(false);
 
   const getAssigneeByName = (name: string, fallback = selectedTask?.assignee) =>
     TEAM_MEMBERS.find((member) => member.name === name) || fallback || TEAM_MEMBERS[0];
@@ -77,6 +81,9 @@ export const TaskPanel = () => {
       setIsAddingSubtask(false);
       setNewSubtaskTitle('');
       setNewSubtaskAssigneeName(selectedTask.assignee.name);
+      setMoveDateBlock(selectedTask.dateBlock);
+      setMoveDateError(null);
+      setIsMoveModalOpen(false);
     }
   }, [selectedTask]);
 
@@ -121,6 +128,34 @@ export const TaskPanel = () => {
       void deleteTask(selectedTask.id).catch((error) => {
         console.error('[Supabase] No se pudo eliminar la tarea:', error);
       });
+    }
+  };
+
+  const openMoveModal = () => {
+    setMoveDateBlock(selectedTask.dateBlock);
+    setMoveDateError(null);
+    setIsMoveModalOpen(true);
+  };
+
+  const handleMoveTask = async () => {
+    if (moveDateBlock === selectedTask.dateBlock) {
+      setMoveDateError('Selecciona una fecha distinta para mover la tarea.');
+      return;
+    }
+
+    try {
+      setIsMovingTask(true);
+      setMoveDateError(null);
+      await updateTask(selectedTask.id, {
+        dateBlock: moveDateBlock,
+        dueDate: moveDateBlock,
+      });
+      setIsMoveModalOpen(false);
+    } catch (error) {
+      setMoveDateError('No se pudo mover la tarea. Revisa la consola e intenta nuevamente.');
+      console.error('[Supabase] No se pudo mover la tarea:', error);
+    } finally {
+      setIsMovingTask(false);
     }
   };
 
@@ -212,6 +247,17 @@ export const TaskPanel = () => {
               )}
             </div>
           </div>
+
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={openMoveModal}
+              className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/70 px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
+            >
+              <MoveRight size={16} />
+              Mover a otra fecha
+            </button>
+          )}
 
           {/* Progress */}
           <div className="mb-8">
@@ -404,6 +450,75 @@ export const TaskPanel = () => {
 
         </div>
       </motion.div>
+
+      {isMoveModalOpen && (
+        <motion.div
+          key="move-task-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#020617]/70 px-4 py-4 backdrop-blur-sm sm:items-center"
+          onClick={() => setIsMoveModalOpen(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.98 }}
+            className="w-full max-w-md rounded-2xl border border-[#1e253c] bg-[#0e121e] p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-white">Mover tarea</h3>
+                <p className="mt-1 text-sm text-slate-400">{selectedTask.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMoveModalOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-xl border border-[#1e253c] bg-[#121827] px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Fecha actual</p>
+              <p className="mt-1 text-sm font-semibold text-slate-200">{formatPickerDate(selectedTask.dateBlock)}</p>
+            </div>
+
+            <DatePicker2026
+              value={moveDateBlock}
+              onChange={(date) => {
+                setMoveDateBlock(date);
+                setMoveDateError(null);
+              }}
+              label="Nueva fecha"
+              error={moveDateError}
+            />
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setIsMoveModalOpen(false)}
+                className="rounded-lg px-4 py-3 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:py-2"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleMoveTask();
+                }}
+                disabled={isMovingTask}
+                className="flex items-center justify-center gap-2 rounded-lg bg-[#506ff0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60 sm:py-2"
+              >
+                <Check size={16} />
+                {isMovingTask ? 'Moviendo...' : 'Guardar fecha'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };
