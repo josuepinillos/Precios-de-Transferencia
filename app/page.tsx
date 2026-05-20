@@ -45,7 +45,7 @@ export default function Home() {
         )}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6 scrollbar-hide">
           <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6">
-            {currentView !== 'dashboard' && <KPICards />}
+            {currentView === 'timeline' && <KPICards />}
 
             {currentView === 'dashboard' && <DashboardExecutive />}
 
