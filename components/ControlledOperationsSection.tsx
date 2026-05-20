@@ -26,6 +26,11 @@ type HeaderField =
 
 type HeaderMap = Partial<Record<HeaderField, number>>;
 
+type ParsedSection = {
+  label: string;
+  score: number;
+};
+
 const SECTION_OPTIONS = [
   '1.1 Transacciones de ingreso',
   '1.2 Transacciones de egreso',
@@ -38,14 +43,14 @@ const SECTION_OPTIONS = [
 ] as const;
 
 const HEADER_ALIASES: Record<HeaderField, string[]> = {
-  operation_number: ['numero de operacion', 'nro de operacion', 'nro operacion', 'operacion'],
-  related_party: ['parte vinculada', 'parte relacionada', 'contraparte'],
-  transaction_description: ['descripcion', 'descripcion de transaccion', 'descripcion transaccion'],
-  transaction_code: ['codigo de transaccion', 'codigo transaccion', 'codigo'],
-  transaction_type: ['tipo de transaccion', 'tipo transaccion', 'tipo'],
+  operation_number: ['n', 'no', 'nro', 'numero', 'numero operacion', 'nro operacion', 'operacion'],
+  related_party: ['sujeto', 'parte v', 'parte vinculada', 'parte relacionada', 'contraparte'],
+  transaction_description: ['descripcion', 'descripcion transaccion', 'detalle', 'concepto'],
+  transaction_code: ['cod', 'codigo', 'codigo transaccion'],
+  transaction_type: ['tipo', 'tipo transaccion'],
   currency: ['divisa', 'moneda'],
-  amount_origin: ['monto moneda origen', 'monto origen', 'importe moneda origen'],
-  amount_pen: ['monto moneda registro', 'monto registro', 'monto pen', 'importe pen'],
+  amount_origin: ['mo', 'monto origen', 'moneda origen', 'monto moneda origen', 'importe origen'],
+  amount_pen: ['pen', 'monto registro', 'moneda registro', 'monto moneda registro', 'importe pen'],
 };
 
 const normalizeText = (value: unknown) =>
@@ -53,8 +58,16 @@ const normalizeText = (value: unknown) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/º|°/g, '')
+    .replace(/[^a-z0-9.]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+const compactText = (value: unknown) => normalizeText(value).replace(/\./g, '');
+
+const isBlankRow = (row: unknown[]) => row.every((cell) => normalizeText(cell).length === 0);
+
+const isTotalRow = (row: unknown[]) => row.some((cell) => /\btotal\b/.test(normalizeText(cell)));
 
 const cleanText = (value: unknown) => {
   const text = String(value ?? '').trim();
@@ -83,43 +96,74 @@ const formatMoney = (value: number | null | undefined) =>
     maximumFractionDigits: 2,
   }).format(value || 0);
 
-const getSectionFromText = (value: unknown) => {
+const getSectionFromText = (value: unknown): ParsedSection | null => {
   const text = normalizeText(value);
+  const compact = compactText(value);
   if (!text) return null;
 
-  return (
-    SECTION_OPTIONS.find((section) => {
-      const normalizedSection = normalizeText(section);
-      const sectionCode = section.split(' ')[0];
-      return text.startsWith(sectionCode) || text.includes(normalizedSection);
-    }) || null
-  );
-};
-
-const detectSection = (row: unknown[]) => {
-  for (const cell of row) {
-    const section = getSectionFromText(cell);
-    if (section) return section;
+  if (text.includes('1.1') || compact.includes('11') || (text.includes('ingreso') && text.includes('transaccion'))) {
+    return { label: '1.1 Transacciones de ingreso', score: 4 };
   }
+  if (text.includes('1.2') || compact.includes('12') || (text.includes('egreso') && text.includes('transaccion'))) {
+    return { label: '1.2 Transacciones de egreso', score: 4 };
+  }
+  if (text.includes('1.3') || compact.includes('13') || (text.includes('ingreso') && (text.includes('2.5') || text.includes('uit')))) {
+    return { label: '1.3 Ingresos inf. 2.5 UIT', score: 5 };
+  }
+  if (text.includes('1.4') || compact.includes('14') || (text.includes('egreso') && (text.includes('2.5') || text.includes('uit')))) {
+    return { label: '1.4 Egresos inf. 2.5 UIT', score: 5 };
+  }
+  if (text.includes('1.5') || compact.includes('15') || (text.includes('ingreso') && text.includes('pbni'))) {
+    return { label: '1.5 Ingresos PBNI', score: 5 };
+  }
+  if (text.includes('1.6') || compact.includes('16') || (text.includes('egreso') && text.includes('pbni'))) {
+    return { label: '1.6 Egresos PBNI', score: 5 };
+  }
+  if (text.includes('1.7') || compact.includes('17') || (text.includes('reembolso') && text.includes('ingreso'))) {
+    return { label: '1.7 Reembolsos ingresos', score: 5 };
+  }
+  if (text.includes('1.8') || compact.includes('18') || (text.includes('reembolso') && text.includes('egreso'))) {
+    return { label: '1.8 Reembolsos egresos', score: 5 };
+  }
+  if (text.includes('ingreso')) return { label: '1.1 Transacciones de ingreso', score: 2 };
+  if (text.includes('egreso')) return { label: '1.2 Transacciones de egreso', score: 2 };
+  if (text.includes('pbni')) return { label: '1.5 Ingresos PBNI', score: 2 };
+  if (text.includes('reembolso')) return { label: '1.7 Reembolsos ingresos', score: 2 };
   return null;
 };
 
-const detectHeaderMap = (row: unknown[]): HeaderMap | null => {
+const detectSection = (row: unknown[]) => {
+  const nonEmptyCells = row.filter((cell) => normalizeText(cell).length > 0);
+  if (nonEmptyCells.length === 0 || nonEmptyCells.length > 4) return null;
+
+  let bestSection: ParsedSection | null = null;
+  for (const cell of row) {
+    const section = getSectionFromText(cell);
+    if (section && (!bestSection || section.score > bestSection.score)) {
+      bestSection = section;
+    }
+  }
+  return bestSection?.label || null;
+};
+
+const detectHeaderMap = (row: unknown[], previousRow: unknown[] = []): HeaderMap | null => {
   const headerMap: HeaderMap = {};
 
   row.forEach((cell, index) => {
-    const normalizedCell = normalizeText(cell);
+    const normalizedCell = normalizeText([previousRow[index], cell].filter(Boolean).join(' '));
     if (!normalizedCell) return;
 
     (Object.entries(HEADER_ALIASES) as Array<[HeaderField, string[]]>).forEach(([field, aliases]) => {
       if (headerMap[field] !== undefined) return;
-      if (aliases.some((alias) => normalizedCell.includes(alias))) {
+      if (aliases.some((alias) => (alias.length <= 3 ? normalizedCell === alias : normalizedCell.includes(alias)))) {
         headerMap[field] = index;
       }
     });
   });
 
-  return Object.keys(headerMap).length >= 4 ? headerMap : null;
+  const hasIdentityColumn = headerMap.operation_number !== undefined || headerMap.related_party !== undefined;
+  const hasAmountColumn = headerMap.amount_origin !== undefined || headerMap.amount_pen !== undefined;
+  return Object.keys(headerMap).length >= 2 && (hasIdentityColumn || hasAmountColumn) ? headerMap : null;
 };
 
 const getCell = (row: unknown[], headerMap: HeaderMap, field: HeaderField) => {
@@ -127,28 +171,66 @@ const getCell = (row: unknown[], headerMap: HeaderMap, field: HeaderField) => {
   return index === undefined ? null : row[index];
 };
 
+const fillMergedCells = (sheet: XLSX.WorkSheet) => {
+  const merges = sheet['!merges'] || [];
+  merges.forEach((mergeRange) => {
+    const sourceAddress = XLSX.utils.encode_cell(mergeRange.s);
+    const sourceCell = sheet[sourceAddress];
+    if (!sourceCell) return;
+
+    for (let rowIndex = mergeRange.s.r; rowIndex <= mergeRange.e.r; rowIndex += 1) {
+      for (let columnIndex = mergeRange.s.c; columnIndex <= mergeRange.e.c; columnIndex += 1) {
+        const address = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
+        if (!sheet[address]) {
+          sheet[address] = { ...sourceCell };
+        }
+      }
+    }
+  });
+};
+
 const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
   const operations: ControlledOperationInsert[] = [];
   let currentSection: string | null = null;
   let headerMap: HeaderMap | null = null;
+  let previousRow: unknown[] = [];
 
   rows.forEach((row) => {
+    if (isBlankRow(row)) {
+      headerMap = null;
+      previousRow = row;
+      return;
+    }
+
     const section = detectSection(row);
     if (section) {
       currentSection = section;
       headerMap = null;
+      console.log('Sección detectada:', section);
+      previousRow = row;
       return;
     }
 
     if (!currentSection) return;
 
-    const detectedHeader = detectHeaderMap(row);
-    if (detectedHeader) {
-      headerMap = detectedHeader;
+    if (isTotalRow(row)) {
+      headerMap = null;
+      previousRow = row;
       return;
     }
 
-    if (!headerMap) return;
+    const detectedHeader = detectHeaderMap(row, previousRow);
+    if (detectedHeader) {
+      headerMap = detectedHeader;
+      console.log('Encabezado detectado:', detectedHeader);
+      previousRow = row;
+      return;
+    }
+
+    if (!headerMap) {
+      previousRow = row;
+      return;
+    }
 
     const operation: ControlledOperationInsert = {
       task_id: taskId,
@@ -174,7 +256,11 @@ const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
       operation.amount_pen,
     ].some((value) => value !== null && value !== undefined && value !== '');
 
-    if (hasContent) operations.push(operation);
+    if (hasContent) {
+      console.log('Fila parseada:', operation);
+      operations.push(operation);
+    }
+    previousRow = row;
   });
 
   return operations;
@@ -187,9 +273,10 @@ const parseExcelFile = async (file: File, taskId: string) => {
 
   workbook.SheetNames.forEach((sheetName) => {
     const sheet = workbook.Sheets[sheetName];
+    fillMergedCells(sheet);
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
       header: 1,
-      raw: false,
+      raw: true,
       defval: '',
     });
     operations.push(...parseWorkbookRows(rows, taskId));
