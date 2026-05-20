@@ -109,7 +109,30 @@ html[data-theme="light"] [class*="bg-[#1e253c]"] {
 }
 
 html[data-theme="light"] [class*="bg-[#1e253c]/"] {
-  background-color: rgba(226, 232, 240, 0.72) !important;
+  background-color: rgba(248, 250, 252, 0.86) !important;
+}
+
+html[data-theme="light"] [class*="bg-[#1e253c]/80"],
+html[data-theme="light"] [class*="bg-[#1e253c]/70"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-theme="light"] [class*="bg-[#1e253c]/50"],
+html[data-theme="light"] [class*="bg-[#1e253c]/40"] {
+  background-color: rgba(239, 246, 255, 0.72) !important;
+}
+
+html[data-theme="light"] [class*="bg-[#506ff0]/10"],
+html[data-theme="light"] [class*="bg-[#506ff0]/15"],
+html[data-theme="light"] [class*="bg-[#506ff0]/20"] {
+  background-color: rgba(239, 246, 255, 0.92) !important;
+}
+
+html[data-theme="light"] [class*="from-[#1e253c]"],
+html[data-theme="light"] [class*="to-[#2a334e]"],
+html[data-theme="light"] [class*="to-[#151a2b]"] {
+  background-image: linear-gradient(135deg, #ffffff 0%, #f1f5ff 100%) !important;
+  background-color: #ffffff !important;
 }
 
 html[data-theme="light"] [class*="bg-[#2a334e]"] {
@@ -123,6 +146,12 @@ html[data-theme="light"] [class*="border-[#2a334e]"] {
 
 html[data-theme="light"] [class*="hover:border-[#2a334e]"]:hover {
   border-color: #b8c6da !important;
+}
+
+html[data-theme="light"] [class*="border-[#506ff0]"],
+html[data-theme="light"] [class*="border-[#506ff0]/"],
+html[data-theme="light"] [class*="border-[#6d5dfc]"] {
+  border-color: #7c8cf8 !important;
 }
 
 html[data-theme="light"] .text-white,
@@ -182,6 +211,26 @@ html[data-theme="light"] ::placeholder {
 
 html[data-theme="light"] [class*="shadow-[0_0_15px"] {
   box-shadow: 0 12px 28px rgba(80, 111, 240, 0.16) !important;
+}
+
+html[data-theme="light"] [class*="shadow-[0_0_14px"],
+html[data-theme="light"] [class*="shadow-[0_0_18px"],
+html[data-theme="light"] [class*="shadow-[0_0_20px"],
+html[data-theme="light"] [class*="shadow-[0_0_22px"],
+html[data-theme="light"] [class*="shadow-[0_0_24px"] {
+  box-shadow: 0 12px 30px rgba(80, 111, 240, 0.14) !important;
+}
+
+html[data-theme="light"] [class*="hover:bg-[#1e253c]"]:hover {
+  background-color: rgba(239, 246, 255, 0.9) !important;
+}
+
+html[data-theme="light"] [class*="hover:bg-[#506ff0]/"]:hover {
+  background-color: rgba(224, 231, 255, 0.95) !important;
+}
+
+html[data-theme="light"] [class*="ring-[#506ff0]/"] {
+  --tw-ring-color: rgba(99, 102, 241, 0.24) !important;
 }
 
 html[data-theme="light"] svg [stroke="#1e253c"] {
