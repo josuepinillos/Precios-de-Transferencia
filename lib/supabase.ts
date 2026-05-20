@@ -120,6 +120,58 @@ export type Database = {
           },
         ];
       };
+      controlled_operations: {
+        Row: {
+          id: string;
+          task_id: string;
+          section: string;
+          operation_number: string | null;
+          related_party: string | null;
+          transaction_description: string | null;
+          transaction_code: string | null;
+          transaction_type: string | null;
+          currency: string | null;
+          amount_origin: number | null;
+          amount_pen: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          section: string;
+          operation_number?: string | null;
+          related_party?: string | null;
+          transaction_description?: string | null;
+          transaction_code?: string | null;
+          transaction_type?: string | null;
+          currency?: string | null;
+          amount_origin?: number | null;
+          amount_pen?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          task_id?: string;
+          section?: string;
+          operation_number?: string | null;
+          related_party?: string | null;
+          transaction_description?: string | null;
+          transaction_code?: string | null;
+          transaction_type?: string | null;
+          currency?: string | null;
+          amount_origin?: number | null;
+          amount_pen?: number | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'controlled_operations_task_id_fkey';
+            columns: ['task_id'];
+            isOneToOne: false;
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

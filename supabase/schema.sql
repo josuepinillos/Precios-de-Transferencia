@@ -33,8 +33,29 @@ create table if not exists public.client_emails (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.controlled_operations (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  section text not null,
+  operation_number text,
+  related_party text,
+  transaction_description text,
+  transaction_code text,
+  transaction_type text,
+  currency text,
+  amount_origin numeric,
+  amount_pen numeric,
+  created_at timestamptz not null default now()
+);
+
 create index if not exists client_emails_task_id_idx
 on public.client_emails(task_id);
+
+create index if not exists controlled_operations_task_id_idx
+on public.controlled_operations(task_id);
+
+create index if not exists controlled_operations_task_section_idx
+on public.controlled_operations(task_id, section);
 
 alter table if exists public.subtasks
 add column if not exists assignee jsonb;
@@ -76,15 +97,18 @@ execute function public.set_updated_at();
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
 alter table public.client_emails enable row level security;
+alter table public.controlled_operations enable row level security;
 
 alter table public.tasks replica identity full;
 alter table public.subtasks replica identity full;
 alter table public.client_emails replica identity full;
+alter table public.controlled_operations replica identity full;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on table public.tasks to anon, authenticated;
 grant select, insert, update, delete on table public.subtasks to anon, authenticated;
 grant select, insert, update, delete on table public.client_emails to anon, authenticated;
+grant select, insert, update, delete on table public.controlled_operations to anon, authenticated;
 
 drop policy if exists "Allow public task reads" on public.tasks;
 create policy "Allow public task reads"
@@ -161,6 +185,31 @@ on public.client_emails for delete
 to anon, authenticated
 using (true);
 
+drop policy if exists "Allow public controlled operation reads" on public.controlled_operations;
+create policy "Allow public controlled operation reads"
+on public.controlled_operations for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Allow public controlled operation inserts" on public.controlled_operations;
+create policy "Allow public controlled operation inserts"
+on public.controlled_operations for insert
+to anon, authenticated
+with check (true);
+
+drop policy if exists "Allow public controlled operation updates" on public.controlled_operations;
+create policy "Allow public controlled operation updates"
+on public.controlled_operations for update
+to anon, authenticated
+using (true)
+with check (true);
+
+drop policy if exists "Allow public controlled operation deletes" on public.controlled_operations;
+create policy "Allow public controlled operation deletes"
+on public.controlled_operations for delete
+to anon, authenticated
+using (true);
+
 do $$
 begin
   if not exists (
@@ -191,6 +240,16 @@ begin
       and tablename = 'client_emails'
   ) then
     alter publication supabase_realtime add table public.client_emails;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'controlled_operations'
+  ) then
+    alter publication supabase_realtime add table public.controlled_operations;
   end if;
 end;
 $$;

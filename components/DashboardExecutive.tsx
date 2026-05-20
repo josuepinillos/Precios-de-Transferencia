@@ -19,6 +19,7 @@ import {
 import { USERS, Task, Subtask } from '../data/mockData';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { ClientEmailsSection } from './ClientEmailsSection';
+import { ControlledOperationsSection } from './ControlledOperationsSection';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -592,6 +593,7 @@ export const DashboardExecutive = () => {
           </div>
 
           <ClientEmailsSection task={selectedTask} />
+          <ControlledOperationsSection task={selectedTask} />
 
           <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
             <Clock3 size={14} />
