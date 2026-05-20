@@ -77,6 +77,37 @@ export type Database = {
           },
         ];
       };
+      client_contacts: {
+        Row: {
+          id: string;
+          task_id: string;
+          client_name: string;
+          email: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          client_name: string;
+          email: string;
+          created_at?: string;
+        };
+        Update: {
+          task_id?: string;
+          client_name?: string;
+          email?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'client_contacts_task_id_fkey';
+            columns: ['task_id'];
+            isOneToOne: false;
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
