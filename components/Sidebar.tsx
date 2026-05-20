@@ -24,13 +24,26 @@ const menuItems = [
   id: ViewId;
 }>;
 
+const getCurrentTheme = (): 'dark' | 'light' => {
+  if (typeof document === 'undefined') return 'dark';
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+};
+
 export const Sidebar = () => {
   const { currentView, setCurrentView } = useDashboardStore();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [theme, setTheme] = React.useState<'dark' | 'light'>(getCurrentTheme);
 
   const handleNavigate = (id: ViewId) => {
     setCurrentView(id);
     setIsOpen(false);
+  };
+
+  const applyTheme = (nextTheme: 'dark' | 'light') => {
+    document.documentElement.dataset.theme = nextTheme;
+    window.localStorage.setItem('dashboard-theme', nextTheme);
+    document.cookie = `dashboard-theme=${nextTheme}; path=/; max-age=31536000; samesite=lax`;
+    setTheme(nextTheme);
   };
 
   const renderSidebarContent = () => (
@@ -73,11 +86,23 @@ export const Sidebar = () => {
       <div className="mt-auto pt-8 flex items-center md:justify-center lg:justify-between px-2 text-slate-400">
         <span className="text-sm font-medium md:hidden lg:inline">Tema</span>
         <div className="flex bg-[#1e253c] rounded-full p-1 relative">
-          <div className="absolute left-1 top-1 w-7 h-7 bg-[#506ff0] rounded-full shadow-lg transition-all" />
-          <button className="w-7 h-7 flex items-center justify-center relative z-10 text-white">
+          <div className={`absolute left-1 top-1 w-7 h-7 bg-[#506ff0] rounded-full shadow-lg transition-transform duration-300 ${theme === 'light' ? 'translate-x-7' : 'translate-x-0'}`} />
+          <button
+            type="button"
+            onClick={() => applyTheme('dark')}
+            className={`theme-toggle-control w-7 h-7 flex items-center justify-center relative z-10 transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-400'}`}
+            aria-label="Activar modo oscuro"
+            aria-pressed={theme === 'dark'}
+          >
             <Moon size={14} />
           </button>
-          <button className="w-7 h-7 flex items-center justify-center relative z-10">
+          <button
+            type="button"
+            onClick={() => applyTheme('light')}
+            className={`theme-toggle-control w-7 h-7 flex items-center justify-center relative z-10 transition-colors ${theme === 'light' ? 'text-white' : 'text-slate-400'}`}
+            aria-label="Activar modo claro"
+            aria-pressed={theme === 'light'}
+          >
             <Sun size={14} />
           </button>
         </div>
