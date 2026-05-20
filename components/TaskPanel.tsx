@@ -6,6 +6,7 @@ import { USERS } from '../data/mockData';
 import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DatePicker2026 } from './DatePicker2026';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -17,6 +18,7 @@ export const TaskPanel = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editDateBlock, setEditDateBlock] = useState('2026-05-16');
   
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -70,6 +72,7 @@ export const TaskPanel = () => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditTitle(selectedTask.title);
       setEditDesc(selectedTask.description);
+      setEditDateBlock(selectedTask.dateBlock);
       setIsEditing(false);
       setIsAddingSubtask(false);
       setNewSubtaskTitle('');
@@ -81,7 +84,12 @@ export const TaskPanel = () => {
 
   const handleSaveEdit = async () => {
     try {
-      await updateTask(selectedTask.id, { title: editTitle, description: editDesc });
+      await updateTask(selectedTask.id, {
+        title: editTitle,
+        description: editDesc,
+        dateBlock: editDateBlock,
+        dueDate: editDateBlock,
+      });
       setIsEditing(false);
     } catch (error) {
       console.error('[Supabase] No se pudo actualizar la tarea:', error);
@@ -194,10 +202,14 @@ export const TaskPanel = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-xs text-slate-400 font-medium mb-2">Fecha límite</h3>
-              <div className="flex items-center gap-2 text-slate-300 text-sm">
-                <CalendarIcon size={14} className="text-slate-400" />
-                  <span className="break-words">{selectedTask.dueDate}</span>
-              </div>
+              {isEditing ? (
+                <DatePicker2026 value={editDateBlock} onChange={setEditDateBlock} label="" />
+              ) : (
+                <div className="flex items-center gap-2 text-slate-300 text-sm">
+                  <CalendarIcon size={14} className="text-slate-400" />
+                    <span className="break-words">{selectedTask.dueDate}</span>
+                </div>
+              )}
             </div>
           </div>
 

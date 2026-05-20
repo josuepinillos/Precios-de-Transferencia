@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { TIMELINE_DAYS, USERS } from '../data/mockData';
+import { USERS } from '../data/mockData';
+import { DatePicker2026 } from './DatePicker2026';
 
 type Priority = 'Alta' | 'Media' | 'Baja';
 
@@ -14,14 +15,15 @@ interface NewTaskModalProps {
 }
 
 const MOCK_USERS = Object.values(USERS);
+const DEFAULT_TASK_DATE = '2026-05-16';
 
 export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
-  const addTask = useDashboardStore(state => state.addTask);
-  const storeError = useDashboardStore(state => state.error);
-  
+  const addTask = useDashboardStore((state) => state.addTask);
+  const storeError = useDashboardStore((state) => state.error);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dateBlock, setDateBlock] = useState(TIMELINE_DAYS[0].date);
+  const [dateBlock, setDateBlock] = useState(DEFAULT_TASK_DATE);
   const [assigneeIdx, setAssigneeIdx] = useState(0);
   const [prioridad, setPrioridad] = useState<Priority | ''>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -42,12 +44,12 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
         dueDate: dateBlock,
         empresa: "Empresa A",
         assignee: MOCK_USERS[assigneeIdx],
-        prioridad: prioridad || 'Media'
+        prioridad: prioridad || 'Media',
       });
 
       setTitle('');
       setDescription('');
-      setDateBlock(TIMELINE_DAYS[0].date);
+      setDateBlock(DEFAULT_TASK_DATE);
       setAssigneeIdx(0);
       setPrioridad('');
       onClose();
@@ -64,21 +66,21 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 bg-[#0b0f19]/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           >
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
               className="glass border border-[#2a334e] rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative"
             >
-              <button 
+              <button
                 onClick={onClose}
                 className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1"
               >
@@ -96,8 +98,8 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Título de la Tarea *</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -108,7 +110,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Descripción</label>
-                  <textarea 
+                  <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors resize-none h-24"
@@ -118,21 +120,12 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Día asignado</label>
-                    <select 
-                      value={dateBlock}
-                      onChange={(e) => setDateBlock(e.target.value)}
-                      className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
-                    >
-                      {TIMELINE_DAYS.map(day => (
-                        <option key={day.date} value={day.date}>{day.label}</option>
-                      ))}
-                    </select>
+                    <DatePicker2026 value={dateBlock} onChange={setDateBlock} label="Día asignado" />
                   </div>
-                  
+
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-slate-400 mb-1">Prioridad</label>
-                    <select 
+                    <select
                       value={prioridad}
                       onChange={(e) => setPrioridad(e.target.value as Priority | '')}
                       className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
@@ -147,7 +140,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Responsable</label>
-                  <select 
+                  <select
                     value={assigneeIdx}
                     onChange={(e) => setAssigneeIdx(Number(e.target.value))}
                     className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
@@ -159,14 +152,14 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                 </div>
 
                 <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-4">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={onClose}
                     className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-[#1e253c] transition-colors"
                   >
                     Cancelar
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     disabled={isSaving}
                     className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-white bg-[#506ff0] hover:bg-[#3f5bc4] transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
