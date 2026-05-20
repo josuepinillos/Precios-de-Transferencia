@@ -261,7 +261,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
   isLoaded: false,
   error: null,
   selectedTaskId: null,
-  currentView: 'timeline',
+  currentView: 'dashboard',
   currentDate: '2026-05-16',
   filters: { assignee: 'all', status: 'all', search: '', empresa: 'all', prioridad: 'all' },
 
