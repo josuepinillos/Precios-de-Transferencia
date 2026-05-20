@@ -77,30 +77,42 @@ export type Database = {
           },
         ];
       };
-      client_contacts: {
+      client_emails: {
         Row: {
           id: string;
           task_id: string;
-          client_name: string;
-          email: string;
+          subject: string;
+          sender: string;
+          email_date: string;
+          status: 'Enviado' | 'Recibido';
+          outlook_link: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
           task_id: string;
-          client_name: string;
-          email: string;
+          subject: string;
+          sender: string;
+          email_date: string;
+          status: 'Enviado' | 'Recibido';
+          outlook_link?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           task_id?: string;
-          client_name?: string;
-          email?: string;
+          subject?: string;
+          sender?: string;
+          email_date?: string;
+          status?: 'Enviado' | 'Recibido';
+          outlook_link?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'client_contacts_task_id_fkey';
+            foreignKeyName: 'client_emails_task_id_fkey';
             columns: ['task_id'];
             isOneToOne: false;
             referencedRelation: 'tasks';

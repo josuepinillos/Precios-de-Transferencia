@@ -21,18 +21,20 @@ create table if not exists public.subtasks (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.client_contacts (
+create table if not exists public.client_emails (
   id uuid primary key default gen_random_uuid(),
   task_id uuid not null references public.tasks(id) on delete cascade,
-  client_name text not null,
-  email text not null,
+  subject text not null,
+  sender text not null default 'Sin remitente',
+  email_date timestamptz not null,
+  status text not null check (status in ('Enviado', 'Recibido')),
+  outlook_link text,
   created_at timestamptz not null default now(),
-  constraint client_contacts_email_check check (position('@' in email) > 1),
-  constraint client_contacts_task_email_unique unique (task_id, email)
+  updated_at timestamptz not null default now()
 );
 
-create index if not exists client_contacts_task_id_idx
-on public.client_contacts(task_id);
+create index if not exists client_emails_task_id_idx
+on public.client_emails(task_id);
 
 alter table if exists public.subtasks
 add column if not exists assignee jsonb;
@@ -65,18 +67,24 @@ before update on public.subtasks
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists set_client_emails_updated_at on public.client_emails;
+create trigger set_client_emails_updated_at
+before update on public.client_emails
+for each row
+execute function public.set_updated_at();
+
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
-alter table public.client_contacts enable row level security;
+alter table public.client_emails enable row level security;
 
 alter table public.tasks replica identity full;
 alter table public.subtasks replica identity full;
-alter table public.client_contacts replica identity full;
+alter table public.client_emails replica identity full;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on table public.tasks to anon, authenticated;
 grant select, insert, update, delete on table public.subtasks to anon, authenticated;
-grant select, insert, update, delete on table public.client_contacts to anon, authenticated;
+grant select, insert, update, delete on table public.client_emails to anon, authenticated;
 
 drop policy if exists "Allow public task reads" on public.tasks;
 create policy "Allow public task reads"
@@ -128,28 +136,28 @@ on public.subtasks for delete
 to anon, authenticated
 using (true);
 
-drop policy if exists "Allow public client contact reads" on public.client_contacts;
-create policy "Allow public client contact reads"
-on public.client_contacts for select
+drop policy if exists "Allow public client email reads" on public.client_emails;
+create policy "Allow public client email reads"
+on public.client_emails for select
 to anon, authenticated
 using (true);
 
-drop policy if exists "Allow public client contact inserts" on public.client_contacts;
-create policy "Allow public client contact inserts"
-on public.client_contacts for insert
+drop policy if exists "Allow public client email inserts" on public.client_emails;
+create policy "Allow public client email inserts"
+on public.client_emails for insert
 to anon, authenticated
 with check (true);
 
-drop policy if exists "Allow public client contact updates" on public.client_contacts;
-create policy "Allow public client contact updates"
-on public.client_contacts for update
+drop policy if exists "Allow public client email updates" on public.client_emails;
+create policy "Allow public client email updates"
+on public.client_emails for update
 to anon, authenticated
 using (true)
 with check (true);
 
-drop policy if exists "Allow public client contact deletes" on public.client_contacts;
-create policy "Allow public client contact deletes"
-on public.client_contacts for delete
+drop policy if exists "Allow public client email deletes" on public.client_emails;
+create policy "Allow public client email deletes"
+on public.client_emails for delete
 to anon, authenticated
 using (true);
 
@@ -180,9 +188,9 @@ begin
     from pg_publication_tables
     where pubname = 'supabase_realtime'
       and schemaname = 'public'
-      and tablename = 'client_contacts'
+      and tablename = 'client_emails'
   ) then
-    alter publication supabase_realtime add table public.client_contacts;
+    alter publication supabase_realtime add table public.client_emails;
   end if;
 end;
 $$;

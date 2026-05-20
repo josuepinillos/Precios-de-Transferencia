@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { USERS, Task, Subtask } from '../data/mockData';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { OutlookClientEmails } from './OutlookClientEmails';
+import { ClientEmailsSection } from './ClientEmailsSection';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -591,7 +591,7 @@ export const DashboardExecutive = () => {
             </div>
           </div>
 
-          <OutlookClientEmails task={selectedTask} />
+          <ClientEmailsSection task={selectedTask} />
 
           <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
             <Clock3 size={14} />
