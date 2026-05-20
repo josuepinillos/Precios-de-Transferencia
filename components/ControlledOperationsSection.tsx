@@ -74,6 +74,19 @@ const cleanText = (value: unknown) => {
   return text.length > 0 ? text : null;
 };
 
+const parseOperationNumber = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Number.isInteger(value) ? String(value) : String(Math.trunc(value));
+  }
+
+  const text = String(value ?? '').trim();
+  if (!text || text === '-') return null;
+
+  const operationNumber = Number(text.replace(/[^\d.-]/g, ''));
+  if (!Number.isFinite(operationNumber) || operationNumber <= 0) return null;
+  return Number.isInteger(operationNumber) ? String(operationNumber) : String(Math.trunc(operationNumber));
+};
+
 const parseAmount = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const raw = String(value ?? '').trim();
@@ -92,8 +105,7 @@ const parseAmount = (value: unknown) => {
 
 const formatMoney = (value: number | null | undefined) =>
   new Intl.NumberFormat('es-PE', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(value || 0);
 
 const getSectionFromText = (value: unknown): ParsedSection | null => {
@@ -200,6 +212,7 @@ const fillMergedCells = (sheet: XLSX.WorkSheet) => {
 
 const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
   const operations: ControlledOperationInsert[] = [];
+  const importedKeys = new Set<string>();
   let currentSection: string | null = null;
   let headerMap: HeaderMap | null = null;
   let previousRow: unknown[] = [];
@@ -237,10 +250,22 @@ const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
       return;
     }
 
+    const operationNumber = parseOperationNumber(getCell(row, headerMap, 'operation_number'));
+    if (!operationNumber) {
+      previousRow = row;
+      return;
+    }
+
+    const operationKey = `${currentSection}:${operationNumber}`;
+    if (importedKeys.has(operationKey)) {
+      previousRow = row;
+      return;
+    }
+
     const operation: ControlledOperationInsert = {
       task_id: taskId,
       section: currentSection,
-      operation_number: cleanText(getCell(row, headerMap, 'operation_number')),
+      operation_number: operationNumber,
       related_party: cleanText(getCell(row, headerMap, 'related_party')),
       transaction_description: cleanText(getCell(row, headerMap, 'transaction_description')),
       transaction_code: cleanText(getCell(row, headerMap, 'transaction_code')),
@@ -250,21 +275,9 @@ const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
       amount_pen: parseAmount(getCell(row, headerMap, 'amount_pen')),
     };
 
-    const hasContent = [
-      operation.operation_number,
-      operation.related_party,
-      operation.transaction_description,
-      operation.transaction_code,
-      operation.transaction_type,
-      operation.currency,
-      operation.amount_origin,
-      operation.amount_pen,
-    ].some((value) => value !== null && value !== undefined && value !== '');
-
-    if (hasContent) {
-      console.log('Fila parseada:', operation);
-      operations.push(operation);
-    }
+    console.log('Fila parseada:', operation);
+    importedKeys.add(operationKey);
+    operations.push(operation);
     previousRow = row;
   });
 
@@ -297,6 +310,21 @@ const groupBySection = <T extends { section: string }>(items: T[]) =>
     return accumulator;
   }, {});
 
+const getValidOperationKey = (operation: { section: string; operation_number?: string | null }) => {
+  const operationNumber = parseOperationNumber(operation.operation_number);
+  return operationNumber ? `${operation.section}:${operationNumber}` : null;
+};
+
+const dedupeValidOperations = <T extends { section: string; operation_number?: string | null }>(items: T[]) => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = getValidOperationKey(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const buildExportRows = (operations: ControlledOperationRow[]) =>
   operations.map((operation) => ({
     Seccion: operation.section,
@@ -306,8 +334,8 @@ const buildExportRows = (operations: ControlledOperationRow[]) =>
     'Codigo de transaccion': operation.transaction_code || '',
     'Tipo de transaccion': operation.transaction_type || '',
     Divisa: operation.currency || '',
-    'Monto moneda origen': operation.amount_origin || 0,
-    'Monto moneda registro': operation.amount_pen || 0,
+    'Monto moneda origen': Math.round(operation.amount_origin || 0),
+    'Monto moneda registro': Math.round(operation.amount_pen || 0),
   }));
 
 const OperationStatusBadge = ({ label }: { label: string }) => (
@@ -381,8 +409,10 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
     };
   }, [loadOperations, task.id]);
 
-  const groupedOperations = React.useMemo(() => groupBySection(operations), [operations]);
-  const groupedPreview = React.useMemo(() => groupBySection(previewOperations), [previewOperations]);
+  const validOperations = React.useMemo(() => dedupeValidOperations(operations), [operations]);
+  const validPreviewOperations = React.useMemo(() => dedupeValidOperations(previewOperations), [previewOperations]);
+  const groupedOperations = React.useMemo(() => groupBySection(validOperations), [validOperations]);
+  const groupedPreview = React.useMemo(() => groupBySection(validPreviewOperations), [validPreviewOperations]);
 
   const availableSections = React.useMemo(() => {
     const sections = SECTION_OPTIONS.filter((section) => (groupedOperations[section]?.length || 0) > 0);
@@ -394,9 +424,11 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
     : availableSections[0];
 
   const visibleOperations = groupedOperations[visibleSection] || [];
-  const totalAmountOrigin = operations.reduce((sum, operation) => sum + (operation.amount_origin || 0), 0);
-  const totalAmountPen = operations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
-  const previewAmountPen = previewOperations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
+  const visibleTotalAmountOrigin = visibleOperations.reduce((sum, operation) => sum + (operation.amount_origin || 0), 0);
+  const visibleTotalAmountPen = visibleOperations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
+  const totalAmountOrigin = validOperations.reduce((sum, operation) => sum + (operation.amount_origin || 0), 0);
+  const totalAmountPen = validOperations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
+  const previewAmountPen = validPreviewOperations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
   const sectionsWithData = Object.keys(groupedOperations).length;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,12 +461,12 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
   };
 
   const handleSavePreview = async () => {
-    if (previewOperations.length === 0) return;
+    if (validPreviewOperations.length === 0) return;
 
     try {
       setIsSaving(true);
       setError(null);
-      const { error } = await getSupabaseClient().from('controlled_operations').insert(previewOperations);
+      const { error } = await getSupabaseClient().from('controlled_operations').insert(validPreviewOperations);
       if (error) throw error;
       setPreviewOperations([]);
       setFileName('');
@@ -448,8 +480,8 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
   };
 
   const handleExport = () => {
-    if (operations.length === 0) return;
-    const worksheet = XLSX.utils.json_to_sheet(buildExportRows(operations));
+    if (validOperations.length === 0) return;
+    const worksheet = XLSX.utils.json_to_sheet(buildExportRows(validOperations));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Operaciones');
     XLSX.writeFile(workbook, `${task.title.replace(/[\\/:*?"<>|]/g, '-')}-operaciones-controladas.xlsx`);
@@ -488,7 +520,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
           <button
             type="button"
             onClick={handleExport}
-            disabled={operations.length === 0}
+            disabled={validOperations.length === 0}
             className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={14} />
@@ -523,7 +555,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                   Preview de importacion
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
-                  {fileName} - {previewOperations.length} operaciones detectadas en {Object.keys(groupedPreview).length} secciones.
+                  {fileName} - {validPreviewOperations.length} operaciones detectadas en {Object.keys(groupedPreview).length} secciones.
                 </p>
                 <p className="mt-1 text-xs text-slate-500">Total moneda registro: {formatMoney(previewAmountPen)}</p>
               </div>
@@ -558,7 +590,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: 'Operaciones', value: operations.length.toString() },
+            { label: 'Operaciones', value: validOperations.length.toString() },
             { label: 'Secciones', value: sectionsWithData.toString() },
             { label: 'Monto origen', value: formatMoney(totalAmountOrigin) },
             { label: 'Monto registro', value: formatMoney(totalAmountPen) },
@@ -628,6 +660,13 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                   <td className="px-4 py-3 text-right text-xs font-semibold text-white">{formatMoney(operation.amount_pen)}</td>
                 </tr>
               ))}
+              {visibleOperations.length > 0 && (
+                <tr className="border-t border-[#506ff0]/40 bg-[#506ff0]/10">
+                  <td className="px-4 py-3 text-sm font-bold uppercase text-white" colSpan={6}>Total</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-white">{formatMoney(visibleTotalAmountOrigin)}</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-white">{formatMoney(visibleTotalAmountPen)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -663,6 +702,21 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
               </div>
             </article>
           ))}
+          {visibleOperations.length > 0 && (
+            <div className="rounded-xl border border-[#506ff0]/40 bg-[#506ff0]/10 p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-white">Total de la seccion</p>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <p className="text-slate-500">Monto origen</p>
+                  <p className="mt-1 font-bold text-white">{formatMoney(visibleTotalAmountOrigin)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Monto registro</p>
+                  <p className="mt-1 font-bold text-white">{formatMoney(visibleTotalAmountPen)}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {!isLoading && visibleOperations.length === 0 && (
