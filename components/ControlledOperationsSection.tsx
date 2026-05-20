@@ -146,6 +146,15 @@ const detectSection = (row: unknown[]) => {
   return bestSection?.label || null;
 };
 
+const matchesHeaderAlias = (value: string, alias: string) => {
+  const compactValue = value.replace(/\./g, '');
+  const normalizedAlias = normalizeText(alias);
+  const compactAlias = compactText(alias);
+
+  if (compactAlias.length <= 3) return compactValue === compactAlias;
+  return value.includes(normalizedAlias) || compactValue.includes(compactAlias);
+};
+
 const detectHeaderMap = (row: unknown[], previousRow: unknown[] = []): HeaderMap | null => {
   const headerMap: HeaderMap = {};
 
@@ -155,7 +164,7 @@ const detectHeaderMap = (row: unknown[], previousRow: unknown[] = []): HeaderMap
 
     (Object.entries(HEADER_ALIASES) as Array<[HeaderField, string[]]>).forEach(([field, aliases]) => {
       if (headerMap[field] !== undefined) return;
-      if (aliases.some((alias) => (alias.length <= 3 ? normalizedCell === alias : normalizedCell.includes(alias)))) {
+      if (aliases.some((alias) => matchesHeaderAlias(normalizedCell, alias))) {
         headerMap[field] = index;
       }
     });
@@ -197,7 +206,6 @@ const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
 
   rows.forEach((row) => {
     if (isBlankRow(row)) {
-      headerMap = null;
       previousRow = row;
       return;
     }
@@ -219,15 +227,12 @@ const parseWorkbookRows = (rows: unknown[][], taskId: string) => {
       return;
     }
 
-    const detectedHeader = detectHeaderMap(row, previousRow);
-    if (detectedHeader) {
-      headerMap = detectedHeader;
-      console.log('Encabezado detectado:', detectedHeader);
-      previousRow = row;
-      return;
-    }
-
     if (!headerMap) {
+      const detectedHeader = detectHeaderMap(row, previousRow);
+      if (detectedHeader) {
+        headerMap = detectedHeader;
+        console.log('Encabezado detectado:', detectedHeader);
+      }
       previousRow = row;
       return;
     }
