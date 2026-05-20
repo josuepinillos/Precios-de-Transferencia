@@ -5,10 +5,8 @@ import { Header } from '@/components/Header';
 import { KPICards } from '@/components/KPICards';
 import { TimelineMain } from '@/components/TimelineMain';
 import { CalendarMain } from '@/components/CalendarMain';
-import { Charts } from '@/components/Charts';
 import { useDashboardStore } from '@/store/useDashboardStore';
-import { Timeline } from '@/components/Timeline';
-import { TaskPanel } from '@/components/TaskPanel';
+import { DashboardExecutive } from '@/components/DashboardExecutive';
 
 export default function Home() {
   const { currentView, initRealtime, isLoaded, error, clearError } = useDashboardStore();
@@ -47,21 +45,9 @@ export default function Home() {
         )}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6 scrollbar-hide">
           <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6">
-            {/* Top KPIs - Always visible */}
-            <KPICards />
-            
-            {/* Dynamic Content based on currentView */}
-            {currentView === 'dashboard' && (
-              <>
-                <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 xl:h-[600px]">
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <Timeline />
-                  </div>
-                  <TaskPanel />
-                </div>
-                <Charts />
-              </>
-            )}
+            {currentView !== 'dashboard' && <KPICards />}
+
+            {currentView === 'dashboard' && <DashboardExecutive />}
 
             {currentView === 'timeline' && <TimelineMain />}
             {currentView === 'calendar' && <CalendarMain />}
