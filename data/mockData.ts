@@ -1,20 +1,23 @@
+export type Assignee = {
+  name: string;
+  role: string;
+  initials: string;
+  colorClass: string;
+};
+
 export type Subtask = {
   id: string;
   title: string;
   completed: boolean;
   date?: string;
+  assignee?: Assignee;
 };
 
 export type Task = {
   id: string;
   title: string;
   description: string;
-  assignee: {
-    name: string;
-    role: string;
-    initials: string;
-    colorClass: string;
-  };
+  assignee: Assignee;
   dueDate: string;
   subtasks: Subtask[];
   dateBlock: string;

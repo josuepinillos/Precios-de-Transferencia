@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
+import { USERS } from '../data/mockData';
 import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const TEAM_MEMBERS = Object.values(USERS);
 
 export const TaskPanel = () => {
   const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask, error } = useDashboardStore();
@@ -17,18 +20,29 @@ export const TaskPanel = () => {
   
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [newSubtaskAssigneeName, setNewSubtaskAssigneeName] = useState(TEAM_MEMBERS[0]?.name || '');
   const [isSavingSubtask, setIsSavingSubtask] = useState(false);
   const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
   const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
+  const [editingSubtaskAssigneeName, setEditingSubtaskAssigneeName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const getAssigneeByName = (name: string, fallback = selectedTask?.assignee) =>
+    TEAM_MEMBERS.find((member) => member.name === name) || fallback || TEAM_MEMBERS[0];
 
   const handleEditSubmit = async (subtaskId: string, e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (editingSubtaskTitle.trim() && selectedTask) {
       try {
-        await editSubtask(selectedTask.id, subtaskId, editingSubtaskTitle.trim());
+        await editSubtask(
+          selectedTask.id,
+          subtaskId,
+          editingSubtaskTitle.trim(),
+          getAssigneeByName(editingSubtaskAssigneeName, selectedTask.assignee),
+        );
         setEditingSubtaskId(null);
         setEditingSubtaskTitle('');
+        setEditingSubtaskAssigneeName('');
       } catch (error) {
         console.error('[Supabase] No se pudo editar la subtarea:', error);
       }
@@ -59,6 +73,7 @@ export const TaskPanel = () => {
       setIsEditing(false);
       setIsAddingSubtask(false);
       setNewSubtaskTitle('');
+      setNewSubtaskAssigneeName(selectedTask.assignee.name);
     }
   }, [selectedTask]);
 
@@ -78,7 +93,11 @@ export const TaskPanel = () => {
     if (newSubtaskTitle.trim() && !isSavingSubtask) {
       try {
         setIsSavingSubtask(true);
-        await addSubtask(selectedTask.id, newSubtaskTitle.trim());
+        await addSubtask(
+          selectedTask.id,
+          newSubtaskTitle.trim(),
+          getAssigneeByName(newSubtaskAssigneeName, selectedTask.assignee),
+        );
         setNewSubtaskTitle('');
         setIsAddingSubtask(false);
       } catch (error) {
@@ -209,36 +228,55 @@ export const TaskPanel = () => {
             </div>
             
             <div className="flex flex-col gap-2">
-              {selectedTask.subtasks.map(subtask => (
-                <div 
-                  key={subtask.id} 
+              {selectedTask.subtasks.map(subtask => {
+                const subtaskAssignee = subtask.assignee || selectedTask.assignee;
+
+                return (
+                <div
+                  key={subtask.id}
                   className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors group"
                 >
                   {editingSubtaskId === subtask.id ? (
                     <form 
                       onSubmit={(e) => handleEditSubmit(subtask.id, e)} 
-                      className="flex items-center gap-2 w-full"
+                      className="flex w-full flex-col gap-2"
                     >
-                      <input
-                        type="text"
-                        autoFocus
-                        value={editingSubtaskTitle}
-                        onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                        className="min-w-0 flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-3 py-2 outline-none"
-                      />
-                      <button 
-                        type="submit" 
-                        className="w-9 h-9 flex items-center justify-center text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          autoFocus
+                          value={editingSubtaskTitle}
+                          onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                          className="min-w-0 flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-3 py-2 outline-none"
+                        />
+                        <button
+                          type="submit"
+                          className="w-9 h-9 flex items-center justify-center text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSubtaskId(null);
+                            setEditingSubtaskAssigneeName('');
+                          }}
+                          className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <select
+                        value={editingSubtaskAssigneeName || subtaskAssignee.name}
+                        onChange={(e) => setEditingSubtaskAssigneeName(e.target.value)}
+                        className="w-full bg-[#0b0f19] border border-[#2a334e] text-xs text-slate-200 rounded px-3 py-2 outline-none focus:border-[#506ff0]"
                       >
-                        <Check size={14} />
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => setEditingSubtaskId(null)}
-                        className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
-                      >
-                        <X size={14} />
-                      </button>
+                        {TEAM_MEMBERS.map((member) => (
+                          <option key={member.name} value={member.name} className="bg-[#0e121e]">
+                            {member.name}
+                          </option>
+                        ))}
+                      </select>
                     </form>
                   ) : (
                     <>
@@ -266,12 +304,19 @@ export const TaskPanel = () => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={clsx("w-7 h-7 flex-shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm", subtaskAssignee.colorClass)}
+                          title={subtaskAssignee.name}
+                        >
+                          {subtaskAssignee.initials}
+                        </div>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingSubtaskId(subtask.id);
                             setEditingSubtaskTitle(subtask.title);
+                            setEditingSubtaskAssigneeName(subtaskAssignee.name);
                             setConfirmDeleteId(null);
                           }}
                           className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
@@ -296,21 +341,35 @@ export const TaskPanel = () => {
                     </>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {isAddingSubtask ? (
-              <form onSubmit={handleAddSubtask} className="mt-4 flex items-center gap-2">
-                <input 
-                  type="text" 
-                  autoFocus
-                  value={newSubtaskTitle}
-                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                  placeholder="Nombre de la subtarea..."
-                  className="min-w-0 flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
-                />
-                <button type="button" onClick={() => setIsAddingSubtask(false)} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white"><X size={16}/></button>
-                <button type="submit" disabled={isSavingSubtask} className="w-11 h-11 flex items-center justify-center bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
+              <form onSubmit={handleAddSubtask} className="mt-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    placeholder="Nombre de la subtarea..."
+                    className="min-w-0 flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
+                  />
+                  <button type="button" onClick={() => setIsAddingSubtask(false)} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white"><X size={16}/></button>
+                  <button type="submit" disabled={isSavingSubtask} className="w-11 h-11 flex items-center justify-center bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
+                </div>
+                <select
+                  value={newSubtaskAssigneeName}
+                  onChange={(e) => setNewSubtaskAssigneeName(e.target.value)}
+                  className="w-full bg-[#1e253c] border border-[#2a334e] text-slate-200 rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
+                >
+                  {TEAM_MEMBERS.map((member) => (
+                    <option key={member.name} value={member.name} className="bg-[#0e121e]">
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
               </form>
             ) : (
               <button 

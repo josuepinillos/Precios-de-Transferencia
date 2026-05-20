@@ -48,6 +48,7 @@ export type Database = {
           task_id: string;
           title: string;
           completed: boolean;
+          assignee: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -56,12 +57,14 @@ export type Database = {
           task_id: string;
           title: string;
           completed?: boolean;
+          assignee?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           title?: string;
           completed?: boolean;
+          assignee?: Json | null;
           updated_at?: string;
         };
         Relationships: [

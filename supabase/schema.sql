@@ -16,9 +16,19 @@ create table if not exists public.subtasks (
   task_id uuid not null references public.tasks(id) on delete cascade,
   title text not null,
   completed boolean not null default false,
+  assignee jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table if exists public.subtasks
+add column if not exists assignee jsonb;
+
+update public.subtasks subtask
+set assignee = task.assignee
+from public.tasks task
+where subtask.task_id = task.id
+  and subtask.assignee is null;
 
 create or replace function public.set_updated_at()
 returns trigger

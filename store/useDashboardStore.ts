@@ -1,6 +1,6 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { create } from 'zustand';
-import { Task, Subtask } from '../data/mockData';
+import { Task, Subtask, USERS } from '../data/mockData';
 import { Database, getSupabaseClient, isSupabaseConfigured, Json } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,12 +8,22 @@ type TaskRow = Database['public']['Tables']['tasks']['Row'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 type SubtaskRow = Database['public']['Tables']['subtasks']['Row'];
+type SubtaskInsert = Database['public']['Tables']['subtasks']['Insert'];
+type SubtaskUpdate = Database['public']['Tables']['subtasks']['Update'];
 
 type TaskWithSubtasks = TaskRow & {
   subtasks?: SubtaskRow[];
 };
 
 type Assignee = Task['assignee'];
+
+type AssigneeStats = {
+  assignee: Assignee;
+  total: number;
+  completed: number;
+  pending: number;
+  progress: number;
+};
 
 interface DashboardState {
   tasks: Task[];
@@ -41,9 +51,9 @@ interface DashboardState {
   addTask: (task: Omit<Task, 'id' | 'subtasks'>) => Promise<void>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
-  addSubtask: (taskId: string, title: string) => Promise<void>;
+  addSubtask: (taskId: string, title: string, assignee?: Assignee) => Promise<void>;
   toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
-  editSubtask: (taskId: string, subtaskId: string, newTitle: string) => Promise<void>;
+  editSubtask: (taskId: string, subtaskId: string, newTitle: string, assignee?: Assignee) => Promise<void>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
 
   getTaskProgress: (taskId: string) => number;
@@ -55,6 +65,7 @@ interface DashboardState {
   getTotalSubtasksCount: () => number;
   getCompletedSubtasksCount: () => number;
   getOverdueSubtasksCount: () => number;
+  getAssigneeStats: () => AssigneeStats[];
 }
 
 let realtimeChannels: RealtimeChannel[] = [];
@@ -111,24 +122,29 @@ const formatTaskDate = (date: string) => {
   }).format(parsedDate);
 };
 
-const mapDbSubtaskToSubtask = (subtask: SubtaskRow): Subtask => ({
+const mapDbSubtaskToSubtask = (subtask: SubtaskRow, fallbackAssignee?: Assignee): Subtask => ({
   id: subtask.id,
   title: subtask.title,
   completed: subtask.completed,
   date: formatSubtaskDate(subtask.created_at),
+  assignee: subtask.assignee ? parseAssignee(subtask.assignee) : fallbackAssignee,
 });
 
-const mapDbTaskToTask = (task: TaskWithSubtasks): Task => ({
-  id: task.id,
-  title: task.title,
-  description: task.description || '',
-  assignee: parseAssignee(task.assignee),
-  dueDate: formatTaskDate(task.due_date),
-  dateBlock: task.date_block,
-  empresa: task.empresa,
-  prioridad: task.prioridad,
-  subtasks: (task.subtasks || []).map(mapDbSubtaskToSubtask),
-});
+const mapDbTaskToTask = (task: TaskWithSubtasks): Task => {
+  const assignee = parseAssignee(task.assignee);
+
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description || '',
+    assignee,
+    dueDate: formatTaskDate(task.due_date),
+    dateBlock: task.date_block,
+    empresa: task.empresa,
+    prioridad: task.prioridad,
+    subtasks: (task.subtasks || []).map((subtask) => mapDbSubtaskToSubtask(subtask, assignee)),
+  };
+};
 
 const rememberConfirmedSubtaskCompletion = (subtaskId: string, completed: boolean) => {
   recentSubtaskCompletions.set(subtaskId, { completed, confirmedAt: Date.now() });
@@ -154,11 +170,10 @@ const applyRecentSubtaskConfirmations = (tasks: Task[]) => {
 };
 
 const mergeSubtaskIntoTasks = (tasks: Task[], subtaskRow: SubtaskRow) => {
-  const mappedSubtask = mapDbSubtaskToSubtask(subtaskRow);
-
   return tasks.map((task) => {
     if (task.id !== subtaskRow.task_id) return task;
 
+    const mappedSubtask = mapDbSubtaskToSubtask(subtaskRow, task.assignee);
     const exists = task.subtasks.some((subtask) => subtask.id === subtaskRow.id);
     return {
       ...task,
@@ -394,13 +409,16 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     );
   },
 
-  addSubtask: async (taskId, title) => {
+  addSubtask: async (taskId, title, assignee) => {
     const id = uuidv4();
-    const insertPayload = {
+    const parentTask = get().tasks.find((task) => task.id === taskId);
+    const subtaskAssignee = assignee || parentTask?.assignee;
+    const insertPayload: SubtaskInsert = {
       id,
       task_id: taskId,
       title,
       completed: false,
+      assignee: subtaskAssignee ? (subtaskAssignee as unknown as Json) : null,
     };
 
     try {
@@ -416,7 +434,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
         failWithStoreError(new Error('Supabase no devolvió la subtarea creada.'), set);
       }
 
-      const newSubtask: Subtask = mapDbSubtaskToSubtask(data as SubtaskRow);
+      const newSubtask: Subtask = mapDbSubtaskToSubtask(data as SubtaskRow, parentTask?.assignee);
       rememberConfirmedSubtaskCompletion(newSubtask.id, newSubtask.completed);
       set((state) => ({
         tasks: state.tasks.map((task) =>
@@ -493,7 +511,10 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     }
   },
 
-  editSubtask: async (taskId, subtaskId, newTitle) => {
+  editSubtask: async (taskId, subtaskId, newTitle, assignee) => {
+    const subtaskUpdate: SubtaskUpdate = { title: newTitle };
+    if (assignee) subtaskUpdate.assignee = assignee as unknown as Json;
+
     await withRevertedTasks(
       () =>
         set((state) => ({
@@ -502,13 +523,13 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
               ? {
                   ...task,
                   subtasks: task.subtasks.map((subtask) =>
-                    subtask.id === subtaskId ? { ...subtask, title: newTitle } : subtask,
+                    subtask.id === subtaskId ? { ...subtask, title: newTitle, assignee: assignee || subtask.assignee } : subtask,
                   ),
                 }
               : task,
           ),
         })),
-      () => getSupabaseClient().from('subtasks').update({ title: newTitle }).eq('id', subtaskId).select('id').single(),
+      () => getSupabaseClient().from('subtasks').update(subtaskUpdate).eq('id', subtaskId).eq('task_id', taskId).select('id').single(),
       set,
       get,
     );
@@ -542,7 +563,13 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     const search = filters.search.trim().toLowerCase();
 
     return tasks.filter((task) => {
-      if (filters.assignee !== 'all' && task.assignee.name !== filters.assignee) return false;
+      if (
+        filters.assignee !== 'all' &&
+        task.assignee.name !== filters.assignee &&
+        !task.subtasks.some((subtask) => (subtask.assignee || task.assignee).name === filters.assignee)
+      ) {
+        return false;
+      }
       if (filters.empresa !== 'all' && task.empresa !== filters.empresa) return false;
       if (filters.prioridad !== 'all' && task.prioridad !== filters.prioridad) return false;
       if (filters.status !== 'all') {
@@ -599,5 +626,45 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
       if (Number.isNaN(taskDate.getTime()) || taskDate >= today) return total;
       return total + task.subtasks.filter((subtask) => !subtask.completed).length;
     }, 0);
+  },
+
+  getAssigneeStats: () => {
+    const stats = Object.values(USERS).reduce<Record<string, AssigneeStats>>((acc, assignee) => {
+      acc[assignee.name] = {
+        assignee,
+        total: 0,
+        completed: 0,
+        pending: 0,
+        progress: 0,
+      };
+      return acc;
+    }, {});
+
+    get().getFilteredTasks().forEach((task) => {
+      task.subtasks.forEach((subtask) => {
+        const assignee = subtask.assignee || task.assignee;
+        if (!stats[assignee.name]) {
+          stats[assignee.name] = {
+            assignee,
+            total: 0,
+            completed: 0,
+            pending: 0,
+            progress: 0,
+          };
+        }
+
+        stats[assignee.name].total += 1;
+        if (subtask.completed) {
+          stats[assignee.name].completed += 1;
+        } else {
+          stats[assignee.name].pending += 1;
+        }
+      });
+    });
+
+    return Object.values(stats).map((item) => ({
+      ...item,
+      progress: item.total === 0 ? 0 : Math.round((item.completed / item.total) * 100),
+    }));
   },
 }));
