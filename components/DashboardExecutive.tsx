@@ -6,8 +6,6 @@ import {
   Calendar,
   Check,
   CheckSquare,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Edit2,
   Folder,
@@ -82,7 +80,6 @@ export const DashboardExecutive = () => {
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [isSavingSubtask, setIsSavingSubtask] = React.useState(false);
   const [matrixSearch, setMatrixSearch] = React.useState('');
-  const cardsRef = React.useRef<HTMLDivElement>(null);
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || tasks[0] || null;
   const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
@@ -126,13 +123,6 @@ export const DashboardExecutive = () => {
     ...item,
     progress: item.total === 0 ? 0 : Math.round((item.completed / item.total) * 100),
   }));
-
-  const scrollCards = (direction: 'left' | 'right') => {
-    cardsRef.current?.scrollBy({
-      left: direction === 'left' ? -360 : 360,
-      behavior: 'smooth',
-    });
-  };
 
   const startEditingSubtask = (subtask: Subtask) => {
     if (!selectedTask) return;
@@ -228,8 +218,8 @@ export const DashboardExecutive = () => {
           <h2 className="text-sm font-bold uppercase tracking-wide text-white">Tareas matrices</h2>
           <p className="mt-1 text-xs text-slate-400">Vista ejecutiva sincronizada con Timeline y Supabase</p>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative w-full sm:w-[260px] lg:w-[320px]">
+        <div className="w-full md:w-auto">
+          <div className="relative w-full sm:w-[280px] lg:w-[340px]">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
@@ -239,28 +229,10 @@ export const DashboardExecutive = () => {
               className="h-10 w-full rounded-xl border border-[#1e253c] bg-[#0e121e]/55 py-2 pl-9 pr-3 text-sm text-white placeholder-slate-500 outline-none transition-all hover:border-[#506ff0]/50 focus:border-[#506ff0] focus:shadow-[0_0_18px_rgba(80,111,240,0.16)]"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollCards('left')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
-              aria-label="Ver tareas anteriores"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollCards('right')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
-              aria-label="Ver siguientes tareas"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
         </div>
       </div>
 
-      <div ref={cardsRef} className="flex snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
+      <div className="flex snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
         {visibleMatrixTasks.map((task) => {
           const progress = getTaskProgress(task.id);
           const status = getTaskStatus(progress);
