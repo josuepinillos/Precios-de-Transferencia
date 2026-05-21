@@ -129,8 +129,8 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
   const obligation = getObligation(totalPen);
 
   return (
-    <div className="formal-obligations-module w-full rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4 xl:max-w-[540px]">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="formal-obligations-module flex h-full w-full flex-col justify-between rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
             <FileCheck2 size={15} className="text-[#8b5cf6]" />
@@ -155,7 +155,7 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 text-xs lg:min-w-[180px]">
+        <div className="grid grid-cols-1 gap-2 text-xs md:min-w-[180px]">
           <div className="flex items-center justify-between gap-4">
             <span className="text-slate-500">Total operaciones</span>
             <span className="font-bold text-white">{formatPen(totalPen)}</span>

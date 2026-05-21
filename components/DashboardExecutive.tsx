@@ -312,8 +312,8 @@ export const DashboardExecutive = () => {
 
       {selectedTask && (
         <div className="glass rounded-2xl border border-[#1e253c] p-4 sm:p-5 lg:p-6 shadow-2xl">
-          <div className="grid grid-cols-1 gap-5 border-b border-[#1e253c] pb-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
-            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-5">
+          <div className="grid grid-cols-1 items-stretch gap-4 border-b border-[#1e253c] pb-5 lg:grid-cols-[minmax(240px,1fr)_minmax(360px,1.25fr)] xl:grid-cols-[minmax(260px,1fr)_minmax(420px,1.35fr)_minmax(280px,0.85fr)]">
+            <div className="flex h-full min-w-0 items-center gap-4 rounded-2xl border border-[#1e253c] bg-[#0e121e]/45 p-4">
               <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-[#2a334e] bg-[#1e253c] text-[#60a5fa] shadow-[0_10px_26px_rgba(80,111,240,0.12)]">
                 <Folder size={24} />
               </div>
@@ -322,10 +322,14 @@ export const DashboardExecutive = () => {
                 <h2 className="text-xl font-bold uppercase text-white">{selectedTask.title}</h2>
                 <p className="mt-1 text-sm font-medium text-slate-400">Reporte Local 2025</p>
               </div>
-              <FormalObligationsBadge task={selectedTask} />
             </div>
 
-            <div className="rounded-2xl border border-[#1e253c] bg-[#0e121e]/45 p-4">
+            <FormalObligationsBadge task={selectedTask} />
+
+            <div className="flex h-full flex-col justify-between rounded-2xl border border-[#1e253c] bg-[#0e121e]/45 p-4">
+              <div className="mb-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                Progreso general
+              </div>
               <div className="mb-3 flex items-center justify-between gap-4">
                 <span className={clsx("text-sm font-bold", selectedStatus.textClass)}>{selectedStatus.label}</span>
                 <span className="text-sm font-bold text-white">{selectedProgress}%</span>
