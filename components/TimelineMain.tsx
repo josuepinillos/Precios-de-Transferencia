@@ -3,32 +3,20 @@
 import React, { useState } from 'react';
 import { Timeline } from './Timeline';
 import { TaskPanel } from './TaskPanel';
-import { Filter, Search, Plus } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { NewTaskModal } from './NewTaskModal';
 import { USERS } from '../data/mockData';
 
 export const TimelineMain = () => {
-  const { currentView, setCurrentView, filters, setFilters } = useDashboardStore();
+  const { filters, setFilters } = useDashboardStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      {/* Tabs & Filters */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-[#1e253c] pb-4">
-        <div className="flex items-center gap-6 overflow-x-auto scrollbar-hide">
-          <button 
-            onClick={() => setCurrentView('timeline')}
-            className={`text-sm font-medium transition-colors ${currentView === 'timeline' ? 'text-white border-b-2 border-[#506ff0] pb-4 -mb-[17px]' : 'text-slate-400 hover:text-white'}`}
-          >
-            Timeline
-          </button>
-          <button 
-            onClick={() => setCurrentView('calendar')}
-            className={`text-sm font-medium transition-colors ${currentView === 'calendar' ? 'text-white border-b-2 border-[#506ff0] pb-4 -mb-[17px]' : 'text-slate-400 hover:text-white'}`}
-          >
-            Calendario
-          </button>
+        <div className="flex items-center">
+          <h2 className="text-sm font-semibold text-white">Timeline</h2>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap sm:items-center gap-3">
@@ -37,11 +25,6 @@ export const TimelineMain = () => {
             className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg bg-[#506ff0] text-white text-sm hover:bg-[#3f5bc4] transition-colors shadow-lg"
           >
             <Plus size={14} /> Nueva Tarea
-          </button>
-
-          <button className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg border border-[#1e253c] text-slate-300 text-sm hover:bg-[#1e253c]/50 transition-colors">
-            <Filter size={16} />
-            <span>Filtros</span>
           </button>
           
           <select
