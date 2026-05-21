@@ -3,18 +3,35 @@
 import React from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { motion } from 'framer-motion';
-import { FileText, Calendar, ArrowRight, X } from 'lucide-react';
+import { FileText, Calendar, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
+
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+const formatCalendarPanelDate = (dateValue: string) => {
+  const [year, month, day] = dateValue.split('-').map(Number);
+  if (!year || !month || !day || month < 1 || month > 12) return dateValue;
+  return `${day} De ${MONTH_NAMES[month - 1]} De ${year}`;
+};
 
 export const CalendarPanel = () => {
   const { getFilteredTasks, getTaskProgress, currentDate } = useDashboardStore();
 
   const dayTasks = getFilteredTasks().filter((task) => task.dateBlock === currentDate);
-  const displayDate = new Date(currentDate).toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const displayDate = formatCalendarPanelDate(currentDate);
 
   return (
     <motion.div
@@ -24,9 +41,6 @@ export const CalendarPanel = () => {
     >
       <div className="p-4 sm:p-5 border-b border-[#1e253c] flex justify-between items-center">
         <h2 className="text-lg sm:text-xl font-bold text-white capitalize">{displayDate}</h2>
-        <button className="text-slate-400 hover:text-white transition-colors">
-          <X size={20} />
-        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 scrollbar-hide flex flex-col">
