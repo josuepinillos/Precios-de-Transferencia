@@ -337,6 +337,24 @@ html[data-theme="light"] .controlled-operations-section .controlled-operations-t
   color: #1e293b !important;
 }
 
+html[data-theme="light"] .formal-obligations-module .formal-obligation-badge-none {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .formal-obligations-module .formal-obligation-badge-annex-i {
+  background-color: #eff6ff !important;
+  border-color: #93c5fd !important;
+  color: #1d4ed8 !important;
+}
+
+html[data-theme="light"] .formal-obligations-module .formal-obligation-badge-annex-iv {
+  background-color: #f5f3ff !important;
+  border-color: #a78bfa !important;
+  color: #6d28d9 !important;
+}
+
 .text-gradient {
   background: linear-gradient(to right, #60a5fa, #a78bfa);
   -webkit-background-clip: text;

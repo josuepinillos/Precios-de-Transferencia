@@ -20,6 +20,7 @@ import { USERS, Task, Subtask } from '../data/mockData';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { ClientEmailsSection } from './ClientEmailsSection';
 import { ControlledOperationsSection } from './ControlledOperationsSection';
+import { FormalObligationsBadge } from './FormalObligationsBadge';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -322,6 +323,7 @@ export const DashboardExecutive = () => {
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
                   {selectedTask.description || 'Sin descripción registrada.'}
                 </p>
+                <FormalObligationsBadge task={selectedTask} />
               </div>
             </div>
 
