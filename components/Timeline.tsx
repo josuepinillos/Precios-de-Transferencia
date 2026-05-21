@@ -7,11 +7,61 @@ import { Folder } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 
+type TimelineDay = {
+  date: string;
+  label: string;
+};
+
+const TIMELINE_YEAR_START = '2026-01-01';
+const TIMELINE_YEAR_END = '2026-12-31';
+const MONTH_LABELS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+
+const isValidTimelineDate = (value: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= TIMELINE_YEAR_START && value <= TIMELINE_YEAR_END;
+
+const parseDateBlock = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatTimelineLabel = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  return `${String(day).padStart(2, '0')} ${MONTH_LABELS[month - 1]} ${year}`;
+};
+
+const toDateBlock = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const buildTimelineDays = (dateBlocks: string[]): TimelineDay[] => {
+  const validDateBlocks = [...new Set(dateBlocks.filter(isValidTimelineDate))].sort();
+  if (validDateBlocks.length === 0) return TIMELINE_DAYS;
+
+  const days: TimelineDay[] = [];
+  const cursor = parseDateBlock(validDateBlocks[0]);
+  const end = parseDateBlock(validDateBlocks[validDateBlocks.length - 1]);
+
+  while (cursor <= end) {
+    const date = toDateBlock(cursor);
+    days.push({ date, label: formatTimelineLabel(date) });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return days;
+};
+
 export const Timeline = () => {
   const { tasks, getFilteredTasks, getTaskProgress, selectTask, selectedTaskId, updateTask } = useDashboardStore();
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropTargetDate, setDropTargetDate] = useState<string | null>(null);
   const filteredTasks = getFilteredTasks();
+  const timelineDays = React.useMemo(
+    () => buildTimelineDays(tasks.map((task) => task.dateBlock)),
+    [tasks],
+  );
 
   const getProgressColor = (progress: number) => {
     if (progress <= 30) return 'bg-[#ef4444]'; // Red
@@ -59,7 +109,7 @@ export const Timeline = () => {
         <div className="absolute left-[30px] sm:left-[44px] top-4 bottom-4 w-px bg-gradient-to-b from-[#506ff0]/50 via-[#8b5cf6]/50 to-transparent"></div>
 
         <div className="flex flex-col gap-6 sm:gap-8 lg:gap-10">
-          {TIMELINE_DAYS.map((day, idx) => {
+          {timelineDays.map((day, idx) => {
             const dayTasks = filteredTasks.filter(t => t.dateBlock === day.date);
             const isDropTarget = dropTargetDate === day.date;
             
