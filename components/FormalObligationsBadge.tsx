@@ -2,7 +2,7 @@
 
 import React from 'react';
 import clsx from 'clsx';
-import { AlertCircle, FileCheck2, RefreshCw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FileCheck2, RefreshCw } from 'lucide-react';
 import { Task } from '../data/mockData';
 import { Database, getSupabaseClient } from '../lib/supabase';
 
@@ -31,12 +31,6 @@ const formatPen = (value: number) =>
     style: 'currency',
     currency: 'PEN',
     maximumFractionDigits: 0,
-  }).format(value);
-
-const formatUit = (value: number) =>
-  new Intl.NumberFormat('es-PE', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
   }).format(value);
 
 const getUniqueValidOperations = (operations: ControlledOperationRow[]) => {
@@ -132,46 +126,42 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
 
   const validOperations = React.useMemo(() => getUniqueValidOperations(operations), [operations]);
   const totalPen = validOperations.reduce((sum, operation) => sum + (operation.amount_pen || 0), 0);
-  const totalUit = totalPen / UIT_2025;
   const obligation = getObligation(totalPen);
 
   return (
-    <div className="formal-obligations-module mt-4 rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+    <div className="formal-obligations-module w-full rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4 xl:max-w-[540px]">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
             <FileCheck2 size={15} className="text-[#8b5cf6]" />
             Obligaciones formales
             {isLoading && <RefreshCw size={12} className="animate-spin text-slate-500" />}
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {obligation.annexes.map((annex) => (
               <span
                 key={annex}
                 className={clsx(
-                  'formal-obligation-badge rounded-full border px-2.5 py-1 text-[11px] font-bold',
+                  'formal-obligation-badge inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold',
                   obligation.level === 'none' && 'formal-obligation-badge-none border-slate-600/40 bg-slate-500/10 text-slate-300',
                   obligation.level === 'annex-i' && 'formal-obligation-badge-annex-i border-[#3b82f6]/40 bg-[#3b82f6]/10 text-[#93c5fd]',
                   obligation.level === 'annex-i-iv' && 'formal-obligation-badge-annex-iv border-[#8b5cf6]/40 bg-[#8b5cf6]/10 text-[#c4b5fd]',
                 )}
               >
+                {obligation.level !== 'none' && <CheckCircle2 size={12} />}
                 {annex}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 text-xs sm:min-w-[220px]">
+        <div className="grid grid-cols-1 gap-2 text-xs lg:min-w-[180px]">
           <div className="flex items-center justify-between gap-4">
             <span className="text-slate-500">Total operaciones</span>
             <span className="font-bold text-white">{formatPen(totalPen)}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-500">Equivalente</span>
-            <span className="font-bold text-white">{formatUit(totalUit)} UIT</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-500">Umbral aplicable</span>
+            <span className="text-slate-500">Obligación</span>
             <span className="font-bold text-white">{obligation.label}</span>
           </div>
         </div>
@@ -184,9 +174,6 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
         </div>
       )}
 
-      <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-        UIT 2025: S/ 5,350. Limites: 100 UIT = S/ 535,000; 400 UIT = S/ 2,140,000.
-      </p>
     </div>
   );
 };

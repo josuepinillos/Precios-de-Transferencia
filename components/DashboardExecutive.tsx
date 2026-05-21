@@ -312,50 +312,26 @@ export const DashboardExecutive = () => {
 
       {selectedTask && (
         <div className="glass rounded-2xl border border-[#1e253c] p-4 sm:p-5 lg:p-6 shadow-2xl">
-          <div className="grid grid-cols-1 gap-4 border-b border-[#1e253c] pb-5 lg:grid-cols-[1.2fr_0.8fr_1fr] lg:items-center">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#1e253c] text-[#60a5fa]">
+          <div className="grid grid-cols-1 gap-5 border-b border-[#1e253c] pb-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
+            <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-center xl:gap-5">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-[#2a334e] bg-[#1e253c] text-[#60a5fa] shadow-[0_10px_26px_rgba(80,111,240,0.12)]">
                 <Folder size={24} />
               </div>
-              <div className="min-w-0">
-                <p className="mb-2 text-xs font-medium text-[#8b5cf6]">Detalle de tarea matriz</p>
+              <div className="min-w-0 flex-1">
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[#8b5cf6]">Detalle de tarea matriz</p>
                 <h2 className="text-xl font-bold uppercase text-white">{selectedTask.title}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                  {selectedTask.description || 'Sin descripción registrada.'}
-                </p>
-                <FormalObligationsBadge task={selectedTask} />
+                <p className="mt-1 text-sm font-medium text-slate-400">Reporte Local 2025</p>
               </div>
+              <FormalObligationsBadge task={selectedTask} />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <div>
-                <span className="text-xs text-slate-400">Fecha límite</span>
-                <div className="mt-2 flex items-center gap-2 text-sm text-white">
-                  <Calendar size={16} className="text-slate-400" />
-                  {selectedTask.dueDate}
-                </div>
-              </div>
-              <div>
-                <span className="text-xs text-slate-400">Responsable principal</span>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className={clsx("flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white", selectedTask.assignee.colorClass)}>
-                    {selectedTask.assignee.initials}
-                  </div>
-                  <span className="text-sm text-white">{selectedTask.assignee.name}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs text-slate-400">Progreso general</span>
+            <div className="rounded-2xl border border-[#1e253c] bg-[#0e121e]/45 p-4">
+              <div className="mb-3 flex items-center justify-between gap-4">
                 <span className={clsx("text-sm font-bold", selectedStatus.textClass)}>{selectedStatus.label}</span>
+                <span className="text-sm font-bold text-white">{selectedProgress}%</span>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[#1e253c]">
-                  <div className={clsx("h-full rounded-full transition-all duration-500", getProgressColor(selectedProgress))} style={{ width: `${selectedProgress}%` }} />
-                </div>
-                <span className="w-12 text-right text-sm font-bold text-white">{selectedProgress}%</span>
+              <div className="h-2 overflow-hidden rounded-full bg-[#1e253c]">
+                <div className={clsx("h-full rounded-full transition-all duration-500", getProgressColor(selectedProgress))} style={{ width: `${selectedProgress}%` }} />
               </div>
             </div>
           </div>
