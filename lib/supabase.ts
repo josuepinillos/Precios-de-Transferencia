@@ -172,6 +172,58 @@ export type Database = {
           },
         ];
       };
+      historical_results: {
+        Row: {
+          id: string;
+          task_id: string;
+          method: string;
+          year: number;
+          lower_quartile: number | null;
+          median: number | null;
+          upper_quartile: number | null;
+          company_result: number | null;
+          three_year_average: number | null;
+          source_file_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          method: string;
+          year: number;
+          lower_quartile?: number | null;
+          median?: number | null;
+          upper_quartile?: number | null;
+          company_result?: number | null;
+          three_year_average?: number | null;
+          source_file_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          task_id?: string;
+          method?: string;
+          year?: number;
+          lower_quartile?: number | null;
+          median?: number | null;
+          upper_quartile?: number | null;
+          company_result?: number | null;
+          three_year_average?: number | null;
+          source_file_name?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'historical_results_task_id_fkey';
+            columns: ['task_id'];
+            isOneToOne: false;
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

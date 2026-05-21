@@ -48,6 +48,22 @@ create table if not exists public.controlled_operations (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.historical_results (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  method text not null,
+  year integer not null check (year between 2021 and 2025),
+  lower_quartile numeric,
+  median numeric,
+  upper_quartile numeric,
+  company_result numeric,
+  three_year_average numeric,
+  source_file_name text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (task_id, method, year)
+);
+
 create index if not exists client_emails_task_id_idx
 on public.client_emails(task_id);
 
@@ -56,6 +72,9 @@ on public.controlled_operations(task_id);
 
 create index if not exists controlled_operations_task_section_idx
 on public.controlled_operations(task_id, section);
+
+create index if not exists historical_results_task_method_idx
+on public.historical_results(task_id, method);
 
 alter table if exists public.subtasks
 add column if not exists assignee jsonb;
@@ -94,21 +113,30 @@ before update on public.client_emails
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists set_historical_results_updated_at on public.historical_results;
+create trigger set_historical_results_updated_at
+before update on public.historical_results
+for each row
+execute function public.set_updated_at();
+
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
 alter table public.client_emails enable row level security;
 alter table public.controlled_operations enable row level security;
+alter table public.historical_results enable row level security;
 
 alter table public.tasks replica identity full;
 alter table public.subtasks replica identity full;
 alter table public.client_emails replica identity full;
 alter table public.controlled_operations replica identity full;
+alter table public.historical_results replica identity full;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on table public.tasks to anon, authenticated;
 grant select, insert, update, delete on table public.subtasks to anon, authenticated;
 grant select, insert, update, delete on table public.client_emails to anon, authenticated;
 grant select, insert, update, delete on table public.controlled_operations to anon, authenticated;
+grant select, insert, update, delete on table public.historical_results to anon, authenticated;
 
 drop policy if exists "Allow public task reads" on public.tasks;
 create policy "Allow public task reads"
@@ -210,6 +238,31 @@ on public.controlled_operations for delete
 to anon, authenticated
 using (true);
 
+drop policy if exists "Allow public historical result reads" on public.historical_results;
+create policy "Allow public historical result reads"
+on public.historical_results for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Allow public historical result inserts" on public.historical_results;
+create policy "Allow public historical result inserts"
+on public.historical_results for insert
+to anon, authenticated
+with check (true);
+
+drop policy if exists "Allow public historical result updates" on public.historical_results;
+create policy "Allow public historical result updates"
+on public.historical_results for update
+to anon, authenticated
+using (true)
+with check (true);
+
+drop policy if exists "Allow public historical result deletes" on public.historical_results;
+create policy "Allow public historical result deletes"
+on public.historical_results for delete
+to anon, authenticated
+using (true);
+
 do $$
 begin
   if not exists (
@@ -250,6 +303,16 @@ begin
       and tablename = 'controlled_operations'
   ) then
     alter publication supabase_realtime add table public.controlled_operations;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'historical_results'
+  ) then
+    alter publication supabase_realtime add table public.historical_results;
   end if;
 end;
 $$;

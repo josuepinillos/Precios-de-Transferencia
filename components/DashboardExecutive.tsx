@@ -22,6 +22,7 @@ import { useDashboardStore } from '../store/useDashboardStore';
 import { ClientEmailsSection } from './ClientEmailsSection';
 import { ControlledOperationsSection } from './ControlledOperationsSection';
 import { FormalObligationsBadge } from './FormalObligationsBadge';
+import { HistoricalResultsSection } from './HistoricalResultsSection';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
@@ -603,6 +604,7 @@ export const DashboardExecutive = () => {
 
           <ClientEmailsSection task={selectedTask} />
           <ControlledOperationsSection task={selectedTask} />
+          <HistoricalResultsSection task={selectedTask} />
 
           <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
             <Clock3 size={14} />
