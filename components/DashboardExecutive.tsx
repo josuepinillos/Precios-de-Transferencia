@@ -13,6 +13,7 @@ import {
   Folder,
   MoreVertical,
   Plus,
+  Search,
   Trash2,
   X,
 } from 'lucide-react';
@@ -79,9 +80,18 @@ export const DashboardExecutive = () => {
   const [newSubtaskAssigneeName, setNewSubtaskAssigneeName] = React.useState(TEAM_MEMBERS[0]?.name || '');
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [isSavingSubtask, setIsSavingSubtask] = React.useState(false);
+  const [matrixSearch, setMatrixSearch] = React.useState('');
   const cardsRef = React.useRef<HTMLDivElement>(null);
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || tasks[0] || null;
+  const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
+  const visibleMatrixTasks = normalizedMatrixSearch
+    ? tasks.filter((task) =>
+        [task.title, task.empresa, task.description]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedMatrixSearch)),
+      )
+    : tasks;
   const selectedProgress = selectedTask ? getTaskProgress(selectedTask.id) : 0;
   const selectedStatus = getTaskStatus(selectedProgress);
   const completedSubtasks = selectedTask?.subtasks.filter((subtask) => subtask.completed).length || 0;
@@ -212,33 +222,45 @@ export const DashboardExecutive = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wide text-white">Tareas matrices</h2>
           <p className="mt-1 text-xs text-slate-400">Vista ejecutiva sincronizada con Timeline y Supabase</p>
         </div>
-        <div className="hidden sm:flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => scrollCards('left')}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
-            aria-label="Ver tareas anteriores"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollCards('right')}
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
-            aria-label="Ver siguientes tareas"
-          >
-            <ChevronRight size={18} />
-          </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-[260px] lg:w-[320px]">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={matrixSearch}
+              onChange={(event) => setMatrixSearch(event.target.value)}
+              placeholder="Buscar tarea matriz..."
+              className="h-10 w-full rounded-xl border border-[#1e253c] bg-[#0e121e]/55 py-2 pl-9 pr-3 text-sm text-white placeholder-slate-500 outline-none transition-all hover:border-[#506ff0]/50 focus:border-[#506ff0] focus:shadow-[0_0_18px_rgba(80,111,240,0.16)]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollCards('left')}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
+              aria-label="Ver tareas anteriores"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollCards('right')}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e253c] text-slate-400 hover:bg-[#1e253c]/50 hover:text-white transition-colors"
+              aria-label="Ver siguientes tareas"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
       </div>
 
       <div ref={cardsRef} className="flex snap-x gap-4 overflow-x-auto pb-3 scrollbar-hide">
-        {tasks.map((task) => {
+        {visibleMatrixTasks.map((task) => {
           const progress = getTaskProgress(task.id);
           const status = getTaskStatus(progress);
           const isSelected = selectedTask?.id === task.id;
@@ -308,6 +330,11 @@ export const DashboardExecutive = () => {
             </button>
           );
         })}
+        {visibleMatrixTasks.length === 0 && (
+          <div className="flex min-h-[180px] min-w-full items-center justify-center rounded-2xl border border-dashed border-[#2a334e] bg-[#0e121e]/35 px-4 py-8 text-center">
+            <p className="text-sm font-semibold text-slate-400">No se encontraron tareas matrices</p>
+          </div>
+        )}
       </div>
 
       {selectedTask && (
