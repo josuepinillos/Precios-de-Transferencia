@@ -32,6 +32,7 @@ type HistoricalResultLike = HistoricalResultRow | HistoricalResultInsert;
 
 const YEARS = [2025, 2024, 2023, 2022, 2021];
 const YEAR_SET = new Set(YEARS);
+const TABLE_YEAR_SET = new Set([2025, 2024, 2023, 2022, 2021, 2020, 2019]);
 const METRIC_LABELS: Array<[MetricKey, string]> = [
   ['lower_quartile', 'Cuartil inferior'],
   ['median', 'Mediana'],
@@ -104,17 +105,22 @@ const detectBlockTitle = (row: unknown[]) => {
 
 const detectHeader = (row: unknown[]) => {
   const yearColumns: Record<number, number> = {};
+  const yearOrder: number[] = [];
   let averageColumn: number | null = null;
 
   row.forEach((cell, index) => {
     const text = normalizeText(cell);
-    const year = Number(text.match(/20(21|22|23|24|25)/)?.[0]);
-    if (YEAR_SET.has(year)) yearColumns[year] = index;
+    const year = Number(text.match(/20(19|20|21|22|23|24|25)/)?.[0]);
+    if (TABLE_YEAR_SET.has(year)) {
+      yearColumns[year] = index;
+      yearOrder.push(year);
+    }
     if (text.includes('promedio')) averageColumn = index;
   });
 
   return {
     yearColumns,
+    yearOrder,
     averageColumn,
     hasYears: Object.keys(yearColumns).length >= 2,
   };
@@ -128,7 +134,7 @@ const detectMetric = (value: unknown): MetricKey | null => {
   return null;
 };
 
-const getWindowYears = (exerciseYear: number) => [exerciseYear, exerciseYear - 1, exerciseYear - 2].filter((year) => YEAR_SET.has(year));
+const getWindowYears = (exerciseYear: number) => [exerciseYear, exerciseYear - 1, exerciseYear - 2];
 
 const buildCompanyName = (label: string, method: string) => {
   const cleaned = label.replace(new RegExp(`^${method}\\s+de\\s+`, 'i'), '').trim();
@@ -142,8 +148,9 @@ const buildTechnicalTable = (
   companyLabel: string,
   companyValues: YearValueMap,
   companyAverage: number | null,
+  detectedYears?: number[],
 ): TechnicalTablePayload => {
-  const years = getWindowYears(exerciseYear);
+  const years = detectedYears && detectedYears.length > 0 ? detectedYears : getWindowYears(exerciseYear);
   const computedAverage = companyAverage ?? averageValues(years.map((year) => companyValues[String(year)]));
 
   return {
@@ -178,6 +185,7 @@ const parseTechnicalBlock = (
   };
   const companyValues: YearValueMap = {};
   let yearColumns: Record<number, number> = {};
+  let blockYears: number[] = [];
   let averageColumn: number | null = null;
   let mode: 'comparable' | 'company' | null = null;
   let companyLabel = '';
@@ -197,13 +205,14 @@ const parseTechnicalBlock = (
     const header = detectHeader(row);
     if (header.hasYears) {
       yearColumns = header.yearColumns;
+      blockYears = header.yearOrder;
       averageColumn = header.averageColumn;
-      if (normalizedRow.includes('parte analizada')) mode = 'company';
+      if (normalizedRow.includes('parte analizada') || normalizedRow.includes('tested party')) mode = 'company';
       if (normalizedRow.includes('rango') || normalizedRow.includes('comparables')) mode = 'comparable';
       continue;
     }
 
-    if (normalizedRow.includes('parte analizada')) {
+    if (normalizedRow.includes('parte analizada') || normalizedRow.includes('tested party')) {
       mode = 'company';
       continue;
     }
@@ -231,11 +240,12 @@ const parseTechnicalBlock = (
         companyValues[year] = parsePercent(row[columnIndex]);
       });
       companyAverage = averageColumn === null ? null : parsePercent(row[averageColumn]);
+      endIndex = index;
       break;
     }
   }
 
-  const windowYears = getWindowYears(exerciseYear);
+  const windowYears = blockYears.length > 0 ? blockYears : getWindowYears(exerciseYear);
   const hasComparableData = METRIC_LABELS.some(([metric]) =>
     windowYears.some((year) => comparable[metric][String(year)] !== null && comparable[metric][String(year)] !== undefined),
   );
@@ -245,7 +255,7 @@ const parseTechnicalBlock = (
     return { result: null, endIndex };
   }
 
-  const technicalTable = buildTechnicalTable(exerciseYear, comparable, comparableAverage, companyLabel, companyValues, companyAverage);
+  const technicalTable = buildTechnicalTable(exerciseYear, comparable, comparableAverage, companyLabel, companyValues, companyAverage, blockYears);
   const insertRow: HistoricalResultInsert = {
     task_id: taskId,
     method,
