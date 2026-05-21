@@ -355,6 +355,93 @@ html[data-theme="light"] .formal-obligations-module .formal-obligation-badge-ann
   color: #6d28d9 !important;
 }
 
+html[data-theme="light"] .historical-results-section {
+  background-color: #ffffff !important;
+  border-color: #d7e0ee !important;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-header,
+html[data-theme="light"] .historical-results-section .historical-results-table-title,
+html[data-theme="light"] .historical-results-section .historical-results-accordion-trigger {
+  background-color: #f8fbff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-secondary-button {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-secondary-button svg {
+  color: #475569 !important;
+  stroke: currentColor !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-secondary-button:hover {
+  background-color: #f8fbff !important;
+  border-color: #93a4f8 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-secondary-button:disabled {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-secondary-button:disabled svg {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-primary-button:disabled {
+  color: #eef2ff !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-accordion,
+html[data-theme="light"] .historical-results-section .historical-results-table,
+html[data-theme="light"] .historical-results-section .historical-results-empty {
+  background-color: #ffffff !important;
+  border-color: #d7e0ee !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-accordion-trigger:hover {
+  background-color: #eef2ff !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-count-badge {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-table-header {
+  background-color: #eef4ff !important;
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-table-row {
+  background-color: #ffffff !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-table-row:nth-child(even) {
+  background-color: #f8fbff !important;
+}
+
+html[data-theme="light"] .historical-results-section th,
+html[data-theme="light"] .historical-results-section td {
+  border-color: #dbe4f0 !important;
+}
+
+html[data-theme="light"] .historical-results-section .historical-results-empty-row {
+  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+}
+
 .text-gradient {
   background: linear-gradient(to right, #60a5fa, #a78bfa);
   -webkit-background-clip: text;
