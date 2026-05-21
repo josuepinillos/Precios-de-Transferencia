@@ -488,7 +488,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
   };
 
   return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
+    <section className="controlled-operations-section mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
       <input
         ref={fileInputRef}
         type="file"
@@ -512,7 +512,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             onClick={() => {
               void loadOperations();
             }}
-            className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
+            className="controlled-operations-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
           >
             <RefreshCw size={14} className={clsx(isLoading && 'animate-spin')} />
             Actualizar
@@ -521,7 +521,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             type="button"
             onClick={handleExport}
             disabled={validOperations.length === 0}
-            className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="controlled-operations-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={14} />
             Exportar Excel
@@ -530,7 +530,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isParsing || isSaving}
-            className="flex h-10 items-center gap-2 rounded-lg bg-[#506ff0] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60"
+            className="controlled-operations-primary-button flex h-10 items-center gap-2 rounded-lg bg-[#506ff0] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Upload size={14} />
             {isParsing ? 'Leyendo...' : 'Importar Excel'}
@@ -612,10 +612,10 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                 type="button"
                 onClick={() => setActiveSection(section)}
                 className={clsx(
-                  'flex-shrink-0 rounded-lg border px-3 py-2 text-left text-xs transition-colors',
+                  'controlled-operations-tab flex-shrink-0 rounded-lg border px-3 py-2 text-left text-xs transition-colors',
                   isActive
-                    ? 'border-[#6d83ff] bg-[#506ff0]/20 text-white shadow-[0_0_18px_rgba(80,111,240,0.18)]'
-                    : 'border-[#1e253c] bg-[#121827]/60 text-slate-400 hover:border-[#506ff0]/50 hover:text-slate-200',
+                    ? 'controlled-operations-tab-active border-[#6d83ff] bg-[#506ff0]/20 text-white shadow-[0_0_18px_rgba(80,111,240,0.18)]'
+                    : 'controlled-operations-tab-idle border-[#1e253c] bg-[#121827]/60 text-slate-400 hover:border-[#506ff0]/50 hover:text-slate-200',
                 )}
               >
                 <span className="block font-semibold">{section}</span>
