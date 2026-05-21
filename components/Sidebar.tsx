@@ -25,7 +25,7 @@ const menuItems = [
 }>;
 
 const getCurrentTheme = (): 'dark' | 'light' => {
-  if (typeof document === 'undefined') return 'dark';
+  if (typeof document === 'undefined') return 'light';
   return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
 };
 

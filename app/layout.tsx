@@ -11,11 +11,10 @@ const themeScript = `
   try {
     const storedTheme = window.localStorage.getItem('dashboard-theme');
     const cookieTheme = document.cookie.match(/(?:^|; )dashboard-theme=(dark|light)(?:;|$)/)?.[1];
-    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-    const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : cookieTheme || (prefersLight ? 'light' : 'dark');
+    const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : cookieTheme || 'light';
     document.documentElement.dataset.theme = theme;
   } catch {
-    document.documentElement.dataset.theme = 'dark';
+    document.documentElement.dataset.theme = 'light';
   }
 })();
 `;
@@ -26,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased" data-theme="dark" suppressHydrationWarning>
+    <html lang="es" className="h-full antialiased" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
