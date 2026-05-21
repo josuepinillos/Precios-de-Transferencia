@@ -3,9 +3,9 @@
 import React from 'react';
 import clsx from 'clsx';
 import * as XLSX from 'xlsx';
-import { AlertCircle, BarChart3, Check, ChevronDown, Download, FileSpreadsheet, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Download, FileSpreadsheet, RefreshCw, Upload, X } from 'lucide-react';
 import { Task } from '../data/mockData';
-import { Database, getSupabaseClient } from '../lib/supabase';
+import { Database, Json, getSupabaseClient } from '../lib/supabase';
 
 type HistoricalResultRow = Database['public']['Tables']['historical_results']['Row'];
 type HistoricalResultInsert = Database['public']['Tables']['historical_results']['Insert'];
@@ -14,15 +14,29 @@ type HistoricalResultsSectionProps = {
   task: Task;
 };
 
-type MetricKey = 'lower_quartile' | 'median' | 'upper_quartile' | 'company_result';
+type MetricKey = 'lower_quartile' | 'median' | 'upper_quartile';
+type YearValueMap = Record<string, number | null>;
 
-type ParsedMethodData = {
-  method: string;
-  values: Record<number, Partial<Record<MetricKey, number>>>;
+type TechnicalTablePayload = {
+  years: number[];
+  comparable: Record<MetricKey, YearValueMap>;
+  comparableAverage: Record<MetricKey, number | null>;
+  company: {
+    label: string;
+    values: YearValueMap;
+    average: number | null;
+  };
 };
+
+type HistoricalResultLike = HistoricalResultRow | HistoricalResultInsert;
 
 const YEARS = [2025, 2024, 2023, 2022, 2021];
 const YEAR_SET = new Set(YEARS);
+const METRIC_LABELS: Array<[MetricKey, string]> = [
+  ['lower_quartile', 'Cuartil inferior'],
+  ['median', 'Mediana'],
+  ['upper_quartile', 'Cuartil superior'],
+];
 
 const normalizeText = (value: unknown) =>
   String(value ?? '')
@@ -33,130 +47,244 @@ const normalizeText = (value: unknown) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const cellText = (value: unknown) => String(value ?? '').trim();
+
+const rowText = (row: unknown[]) => row.map(cellText).filter(Boolean).join(' ');
+
+const firstMeaningfulCell = (row: unknown[]) => row.find((cell) => normalizeText(cell).length > 0);
+
 const parsePercent = (value: unknown) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const text = String(value ?? '').trim();
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value !== 0 && Math.abs(value) <= 1 ? value * 100 : value;
+  }
+
+  const text = cellText(value);
   if (!text) return null;
 
   const normalized = text.replace('%', '').replace(/\s/g, '').replace(',', '.');
   const number = Number(normalized);
-  return Number.isFinite(number) ? number : null;
+  if (!Number.isFinite(number)) return null;
+
+  return number !== 0 && Math.abs(number) <= 1 && text.includes('%') ? number * 100 : number;
 };
 
-const formatPercent = (value: number | null | undefined) => {
+const formatNumber = (value: number | null | undefined) => {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'N/D';
-  return `${new Intl.NumberFormat('es-PE', {
+  return new Intl.NumberFormat('es-PE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value)}%`;
+  }).format(value);
+};
+
+const averageValues = (values: Array<number | null | undefined>) => {
+  const validValues = values.filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+  if (validValues.length !== values.length || validValues.length === 0) return null;
+  return validValues.reduce((sum, value) => sum + value, 0) / validValues.length;
+};
+
+const detectBlockTitle = (row: unknown[]) => {
+  for (const cell of row) {
+    const text = cellText(cell);
+    const match = text.match(/\b([A-Za-z][A-Za-z0-9]{1,11})\b\s*(?:-|–)?\s*(20(?:21|22|23|24|25))\b/i);
+    if (!match) continue;
+
+    const method = match[1]
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase();
+    const exerciseYear = Number(match[2]);
+
+    if (YEAR_SET.has(exerciseYear)) {
+      return { method, exerciseYear };
+    }
+  }
+
+  return null;
+};
+
+const detectHeader = (row: unknown[]) => {
+  const yearColumns: Record<number, number> = {};
+  let averageColumn: number | null = null;
+
+  row.forEach((cell, index) => {
+    const text = normalizeText(cell);
+    const year = Number(text.match(/20(21|22|23|24|25)/)?.[0]);
+    if (YEAR_SET.has(year)) yearColumns[year] = index;
+    if (text.includes('promedio')) averageColumn = index;
+  });
+
+  return {
+    yearColumns,
+    averageColumn,
+    hasYears: Object.keys(yearColumns).length >= 2,
+  };
 };
 
 const detectMetric = (value: unknown): MetricKey | null => {
   const text = normalizeText(value);
-  if (!text) return null;
-  if (text.includes('cuartil inferior') || text.includes('quartile lower') || text.includes('lower quartile')) return 'lower_quartile';
+  if (text.includes('cuartil inferior') || text.includes('lower quartile')) return 'lower_quartile';
   if (text.includes('mediana') || text.includes('median')) return 'median';
-  if (text.includes('cuartil superior') || text.includes('quartile upper') || text.includes('upper quartile')) return 'upper_quartile';
-  if (text.includes('empresa') || text.includes('analizada') || text.includes('analizado')) return 'company_result';
+  if (text.includes('cuartil superior') || text.includes('upper quartile')) return 'upper_quartile';
   return null;
 };
 
-const extractMethod = (value: unknown) => {
-  const raw = String(value ?? '').trim();
-  if (!raw) return null;
+const getWindowYears = (exerciseYear: number) => [exerciseYear, exerciseYear - 1, exerciseYear - 2].filter((year) => YEAR_SET.has(year));
 
-  const withoutPrefix = raw.replace(/empresa\s+analizada/gi, '').trim();
-  const methodMatch = withoutPrefix.match(/^([A-ZÁÉÍÓÚÑ0-9]{2,12})\b/i);
-  if (!methodMatch) return null;
-
-  const method = methodMatch[1]
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase();
-
-  return method.length >= 2 ? method : null;
+const buildCompanyName = (label: string, method: string) => {
+  const cleaned = label.replace(new RegExp(`^${method}\\s+de\\s+`, 'i'), '').trim();
+  return cleaned || label || 'Parte analizada';
 };
 
-const findYearColumns = (row: unknown[]) =>
-  row.reduce<Record<number, number>>((accumulator, cell, index) => {
-    const year = Number(String(cell ?? '').match(/20(21|22|23|24|25)/)?.[0]);
-    if (YEAR_SET.has(year)) accumulator[year] = index;
-    return accumulator;
-  }, {});
+const buildTechnicalTable = (
+  exerciseYear: number,
+  comparable: Record<MetricKey, YearValueMap>,
+  comparableAverage: Record<MetricKey, number | null>,
+  companyLabel: string,
+  companyValues: YearValueMap,
+  companyAverage: number | null,
+): TechnicalTablePayload => {
+  const years = getWindowYears(exerciseYear);
+  const computedAverage = companyAverage ?? averageValues(years.map((year) => companyValues[String(year)]));
 
-const buildAverage = (methodData: ParsedMethodData, year: number) => {
-  const values = [year, year - 1, year - 2]
-    .map((itemYear) => methodData.values[itemYear]?.company_result)
-    .filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+  return {
+    years,
+    comparable,
+    comparableAverage,
+    company: {
+      label: companyLabel || 'Parte analizada',
+      values: companyValues,
+      average: computedAverage,
+    },
+  };
+};
 
-  return values.length === 3 ? values.reduce((sum, value) => sum + value, 0) / 3 : null;
+const parseTechnicalBlock = (
+  rows: unknown[][],
+  startIndex: number,
+  taskId: string,
+  sourceFileName: string,
+  method: string,
+  exerciseYear: number,
+) => {
+  const comparable: Record<MetricKey, YearValueMap> = {
+    lower_quartile: {},
+    median: {},
+    upper_quartile: {},
+  };
+  const comparableAverage: Record<MetricKey, number | null> = {
+    lower_quartile: null,
+    median: null,
+    upper_quartile: null,
+  };
+  const companyValues: YearValueMap = {};
+  let yearColumns: Record<number, number> = {};
+  let averageColumn: number | null = null;
+  let mode: 'comparable' | 'company' | null = null;
+  let companyLabel = '';
+  let companyAverage: number | null = null;
+  let endIndex = rows.length;
+
+  for (let index = startIndex + 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (detectBlockTitle(row)) {
+      endIndex = index - 1;
+      break;
+    }
+
+    const normalizedRow = normalizeText(rowText(row));
+    if (!normalizedRow) continue;
+
+    const header = detectHeader(row);
+    if (header.hasYears) {
+      yearColumns = header.yearColumns;
+      averageColumn = header.averageColumn;
+      if (normalizedRow.includes('parte analizada')) mode = 'company';
+      if (normalizedRow.includes('rango') || normalizedRow.includes('comparables')) mode = 'comparable';
+      continue;
+    }
+
+    if (normalizedRow.includes('parte analizada')) {
+      mode = 'company';
+      continue;
+    }
+
+    if (mode === 'comparable') {
+      const metric = detectMetric(firstMeaningfulCell(row));
+      if (!metric) continue;
+
+      Object.entries(yearColumns).forEach(([year, columnIndex]) => {
+        comparable[metric][year] = parsePercent(row[columnIndex]);
+      });
+      comparableAverage[metric] = averageColumn === null ? null : parsePercent(row[averageColumn]);
+      continue;
+    }
+
+    if (mode === 'company') {
+      const label = cellText(firstMeaningfulCell(row));
+      if (!label) continue;
+
+      const hasCompanyValues = Object.values(yearColumns).some((columnIndex) => parsePercent(row[columnIndex]) !== null);
+      if (!hasCompanyValues) continue;
+
+      companyLabel = label;
+      Object.entries(yearColumns).forEach(([year, columnIndex]) => {
+        companyValues[year] = parsePercent(row[columnIndex]);
+      });
+      companyAverage = averageColumn === null ? null : parsePercent(row[averageColumn]);
+      break;
+    }
+  }
+
+  const windowYears = getWindowYears(exerciseYear);
+  const hasComparableData = METRIC_LABELS.some(([metric]) =>
+    windowYears.some((year) => comparable[metric][String(year)] !== null && comparable[metric][String(year)] !== undefined),
+  );
+  const hasCompanyData = windowYears.some((year) => companyValues[String(year)] !== null && companyValues[String(year)] !== undefined);
+
+  if (!hasComparableData && !hasCompanyData) {
+    return { result: null, endIndex };
+  }
+
+  const technicalTable = buildTechnicalTable(exerciseYear, comparable, comparableAverage, companyLabel, companyValues, companyAverage);
+  const insertRow: HistoricalResultInsert = {
+    task_id: taskId,
+    method,
+    year: exerciseYear,
+    exercise_year: exerciseYear,
+    method_name: method,
+    company_name: buildCompanyName(companyLabel, method),
+    lower_quartile: comparable.lower_quartile[String(exerciseYear)] ?? null,
+    median: comparable.median[String(exerciseYear)] ?? null,
+    upper_quartile: comparable.upper_quartile[String(exerciseYear)] ?? null,
+    company_result: companyValues[String(exerciseYear)] ?? null,
+    three_year_average: technicalTable.company.average,
+    company_2025: companyValues['2025'] ?? null,
+    company_2024: companyValues['2024'] ?? null,
+    company_2023: companyValues['2023'] ?? null,
+    average_value: technicalTable.company.average,
+    comparable_2025: comparable.median['2025'] ?? null,
+    comparable_2024: comparable.median['2024'] ?? null,
+    comparable_2023: comparable.median['2023'] ?? null,
+    technical_table: technicalTable as unknown as Json,
+    source_file_name: sourceFileName,
+  };
+
+  return { result: insertRow, endIndex };
 };
 
 const parseWorkbookRows = (rows: unknown[][], taskId: string, sourceFileName: string) => {
-  let yearColumns: Record<number, number> = {};
-  const methods = new Map<string, ParsedMethodData>();
-  let activeMethod: string | null = null;
+  const results: HistoricalResultInsert[] = [];
 
-  rows.forEach((row) => {
-    const detectedYearColumns = findYearColumns(row);
-    if (Object.keys(detectedYearColumns).length >= 2) {
-      yearColumns = detectedYearColumns;
-      return;
-    }
+  for (let index = 0; index < rows.length; index += 1) {
+    const title = detectBlockTitle(rows[index]);
+    if (!title) continue;
 
-    const firstMeaningfulCell = row.find((cell) => normalizeText(cell).length > 0);
-    const methodFromRow = extractMethod(firstMeaningfulCell);
-    const metric = detectMetric(firstMeaningfulCell);
+    const parsedBlock = parseTechnicalBlock(rows, index, taskId, sourceFileName, title.method, title.exerciseYear);
+    if (parsedBlock.result) results.push(parsedBlock.result);
+    index = Math.max(index, parsedBlock.endIndex);
+  }
 
-    if (methodFromRow) {
-      activeMethod = methodFromRow;
-      if (!methods.has(activeMethod)) {
-        methods.set(activeMethod, { method: activeMethod, values: {} });
-      }
-    }
-
-    if (!activeMethod || !metric || Object.keys(yearColumns).length === 0) return;
-
-    const methodData = methods.get(activeMethod);
-    if (!methodData) return;
-
-    Object.entries(yearColumns).forEach(([yearValue, columnIndex]) => {
-      const year = Number(yearValue);
-      const parsedValue = parsePercent(row[columnIndex]);
-      if (parsedValue === null) return;
-      methodData.values[year] = methodData.values[year] || {};
-      methodData.values[year][metric] = parsedValue;
-    });
-  });
-
-  const rowsToInsert: HistoricalResultInsert[] = [];
-  methods.forEach((methodData) => {
-    YEARS.forEach((year) => {
-      const yearValues = methodData.values[year];
-      if (!yearValues) return;
-
-      const hasData = ['lower_quartile', 'median', 'upper_quartile', 'company_result'].some((key) => {
-        const value = yearValues[key as MetricKey];
-        return value !== null && value !== undefined && Number.isFinite(value);
-      });
-
-      if (!hasData) return;
-
-      rowsToInsert.push({
-        task_id: taskId,
-        method: methodData.method,
-        year,
-        lower_quartile: yearValues.lower_quartile ?? null,
-        median: yearValues.median ?? null,
-        upper_quartile: yearValues.upper_quartile ?? null,
-        company_result: yearValues.company_result ?? null,
-        three_year_average: buildAverage(methodData, year),
-        source_file_name: sourceFileName,
-      });
-    });
-  });
-
-  return rowsToInsert.sort((left, right) => right.year - left.year || left.method.localeCompare(right.method));
+  return results;
 };
 
 const parseExcelFile = async (file: File, taskId: string) => {
@@ -170,46 +298,175 @@ const parseExcelFile = async (file: File, taskId: string) => {
       header: 1,
       raw: true,
       defval: '',
+      blankrows: false,
     });
     results.push(...parseWorkbookRows(rows, taskId, file.name));
   });
 
   const seen = new Set<string>();
   return results.filter((result) => {
-    const key = `${result.method}:${result.year}`;
+    const key = `${result.exercise_year ?? result.year}:${result.method_name ?? result.method}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 };
 
-const getMethods = (results: Array<Pick<HistoricalResultRow, 'method'>>) =>
-  [...new Set(results.map((result) => result.method))].sort((left, right) => left.localeCompare(right));
+const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
-const groupByYear = (results: HistoricalResultRow[]) =>
-  YEARS.reduce<Record<number, HistoricalResultRow[]>>((accumulator, year) => {
-    accumulator[year] = results.filter((result) => result.year === year);
+const isYearValueMap = (value: unknown): value is YearValueMap =>
+  isRecord(value) && Object.values(value).every((item) => item === null || typeof item === 'number');
+
+const isTechnicalPayload = (value: unknown): value is TechnicalTablePayload => {
+  if (!isRecord(value)) return false;
+  if (!Array.isArray(value.years) || !value.years.every((year) => typeof year === 'number')) return false;
+  if (!isRecord(value.comparable) || !isRecord(value.comparableAverage) || !isRecord(value.company)) return false;
+
+  const comparable = value.comparable;
+  return METRIC_LABELS.every(([metric]) => isYearValueMap(comparable[metric]));
+};
+
+const getMethod = (result: HistoricalResultLike) => result.method_name || result.method || 'Metodo';
+
+const getExerciseYear = (result: HistoricalResultLike) => result.exercise_year || result.year || 2025;
+
+const getTechnicalTable = (result: HistoricalResultLike): TechnicalTablePayload => {
+  if ('technical_table' in result && isTechnicalPayload(result.technical_table)) return result.technical_table;
+
+  const exerciseYear = getExerciseYear(result);
+  const yearKey = String(exerciseYear);
+  const comparable: Record<MetricKey, YearValueMap> = {
+    lower_quartile: { [yearKey]: result.lower_quartile ?? null },
+    median: { [yearKey]: result.median ?? null },
+    upper_quartile: { [yearKey]: result.upper_quartile ?? null },
+  };
+
+  return buildTechnicalTable(
+    exerciseYear,
+    comparable,
+    {
+      lower_quartile: null,
+      median: null,
+      upper_quartile: null,
+    },
+    `${getMethod(result)} de ${result.company_name || 'Parte analizada'}`,
+    { [yearKey]: result.company_result ?? null },
+    result.average_value ?? result.three_year_average ?? null,
+  );
+};
+
+const groupByExercise = (results: HistoricalResultLike[]) =>
+  YEARS.reduce<Record<number, HistoricalResultLike[]>>((accumulator, year) => {
+    accumulator[year] = results
+      .filter((result) => getExerciseYear(result) === year)
+      .sort((left, right) => getMethod(left).localeCompare(getMethod(right)));
     return accumulator;
   }, {});
 
-const buildExportRows = (results: HistoricalResultRow[]) =>
-  results.map((result) => ({
-    Metodo: result.method,
-    Ano: result.year,
-    'Cuartil inferior': result.lower_quartile ?? '',
-    Mediana: result.median ?? '',
-    'Cuartil superior': result.upper_quartile ?? '',
-    'Resultado empresa': result.company_result ?? '',
-    'Promedio 3 anos': result.three_year_average ?? '',
-    Archivo: result.source_file_name || '',
-  }));
+const buildExportRows = (results: HistoricalResultRow[]) => {
+  const rows: unknown[][] = [];
+
+  results.forEach((result) => {
+    const method = getMethod(result);
+    const exerciseYear = getExerciseYear(result);
+    const technicalTable = getTechnicalTable(result);
+
+    rows.push([`${method} ${exerciseYear}`]);
+    rows.push([]);
+    rows.push(['Rango de empresas comparables', ...technicalTable.years, 'Promedio']);
+    METRIC_LABELS.forEach(([metric, label]) => {
+      rows.push([
+        label,
+        ...technicalTable.years.map((year) => technicalTable.comparable[metric][String(year)] ?? ''),
+        technicalTable.comparableAverage[metric] ?? '',
+      ]);
+    });
+    rows.push([]);
+    rows.push(['Parte analizada', ...technicalTable.years, 'Promedio']);
+    rows.push([
+      technicalTable.company.label,
+      ...technicalTable.years.map((year) => technicalTable.company.values[String(year)] ?? ''),
+      technicalTable.company.average ?? '',
+    ]);
+    rows.push([]);
+  });
+
+  return rows;
+};
+
+const TechnicalResultTable = ({ result }: { result: HistoricalResultLike }) => {
+  const method = getMethod(result);
+  const exerciseYear = getExerciseYear(result);
+  const technicalTable = getTechnicalTable(result);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#071028]">
+      <div className="border-b border-white/10 bg-[#0b1735] px-4 py-3">
+        <h5 className="text-sm font-bold uppercase tracking-wide text-white">
+          {method} {exerciseYear}
+        </h5>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] border-collapse text-left text-xs">
+          <thead>
+            <tr className="bg-[#0d1b3d] text-[11px] uppercase tracking-wide text-slate-200">
+              <th className="border border-white/10 px-4 py-3 font-bold">Rango de empresas comparables</th>
+              {technicalTable.years.map((year) => (
+                <th key={year} className="border border-white/10 px-4 py-3 text-right font-bold">
+                  {year}
+                </th>
+              ))}
+              <th className="border border-white/10 px-4 py-3 text-right font-bold">Promedio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {METRIC_LABELS.map(([metric, label]) => (
+              <tr key={metric} className="bg-[#08132d] text-slate-200">
+                <td className="border border-white/10 px-4 py-3 font-medium">{label}</td>
+                {technicalTable.years.map((year) => (
+                  <td key={year} className="border border-white/10 px-4 py-3 text-right tabular-nums">
+                    {formatNumber(technicalTable.comparable[metric][String(year)])}
+                  </td>
+                ))}
+                <td className="border border-white/10 px-4 py-3 text-right font-semibold tabular-nums">
+                  {formatNumber(technicalTable.comparableAverage[metric])}
+                </td>
+              </tr>
+            ))}
+            <tr className="bg-[#0d1b3d] text-[11px] uppercase tracking-wide text-slate-200">
+              <th className="border border-white/10 px-4 py-3 font-bold">Parte analizada</th>
+              {technicalTable.years.map((year) => (
+                <th key={year} className="border border-white/10 px-4 py-3 text-right font-bold">
+                  {year}
+                </th>
+              ))}
+              <th className="border border-white/10 px-4 py-3 text-right font-bold">Promedio</th>
+            </tr>
+            <tr className="bg-[#08132d] text-white">
+              <td className="border border-white/10 px-4 py-3 font-semibold">{technicalTable.company.label}</td>
+              {technicalTable.years.map((year) => (
+                <td key={year} className="border border-white/10 px-4 py-3 text-right font-semibold tabular-nums">
+                  {formatNumber(technicalTable.company.values[String(year)])}
+                </td>
+              ))}
+              <td className="border border-white/10 px-4 py-3 text-right font-bold tabular-nums">
+                {formatNumber(technicalTable.company.average)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps) => {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [results, setResults] = React.useState<HistoricalResultRow[]>([]);
   const [previewResults, setPreviewResults] = React.useState<HistoricalResultInsert[]>([]);
-  const [selectedMethods, setSelectedMethods] = React.useState<string[]>([]);
   const [sourceFileName, setSourceFileName] = React.useState('');
+  const [expandedYears, setExpandedYears] = React.useState<number[]>([2025]);
   const [isParsing, setIsParsing] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -243,19 +500,10 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
       setPreviewResults([]);
       setSourceFileName('');
       setShowDetailTable(false);
+      setExpandedYears([2025]);
       void loadResults();
     });
   }, [loadResults, task.id]);
-
-  React.useEffect(() => {
-    queueMicrotask(() => {
-      const methods = getMethods(results);
-      setSelectedMethods((current) => {
-        const next = current.filter((method) => methods.includes(method));
-        return next.length > 0 ? next : methods;
-      });
-    });
-  }, [results]);
 
   React.useEffect(() => {
     const supabase = getSupabaseClient();
@@ -280,13 +528,12 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
     };
   }, [loadResults, task.id]);
 
-  const methods = React.useMemo(() => getMethods(results), [results]);
-  const previewMethods = React.useMemo(() => getMethods(previewResults), [previewResults]);
-  const filteredResults = React.useMemo(
-    () => results.filter((result) => selectedMethods.includes(result.method)),
-    [results, selectedMethods],
-  );
-  const resultsByYear = React.useMemo(() => groupByYear(filteredResults), [filteredResults]);
+  const resultsByYear = React.useMemo(() => groupByExercise(results), [results]);
+  const previewByYear = React.useMemo(() => groupByExercise(previewResults), [previewResults]);
+
+  const toggleYear = (year: number) => {
+    setExpandedYears((current) => (current.includes(year) ? current.filter((item) => item !== year) : [...current, year]));
+  };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -306,6 +553,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
 
       setPreviewResults(parsedResults);
       setSourceFileName(file.name);
+      setExpandedYears([...new Set(parsedResults.map((result) => getExerciseYear(result)))]);
     } catch (error) {
       setPreviewResults([]);
       setSourceFileName('');
@@ -318,7 +566,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
 
   const savePreview = async () => {
     if (previewResults.length === 0) return;
-    const shouldReplace = window.confirm('Se reemplazara el historial anterior de esta tarea matriz. ¿Deseas continuar?');
+    const shouldReplace = window.confirm('Se reemplazara el historial anterior de esta tarea matriz. Deseas continuar?');
     if (!shouldReplace) return;
 
     try {
@@ -342,22 +590,19 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
     }
   };
 
-  const toggleMethod = (method: string) => {
-    setSelectedMethods((current) =>
-      current.includes(method) ? current.filter((item) => item !== method) : [...current, method],
-    );
-  };
-
   const exportResults = () => {
     if (results.length === 0) return;
-    const worksheet = XLSX.utils.json_to_sheet(buildExportRows(results));
+    const worksheet = XLSX.utils.aoa_to_sheet(buildExportRows(results));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Historial');
     XLSX.writeFile(workbook, `${task.title.replace(/[\\/:*?"<>|]/g, '-')}-historial-resultados.xlsx`);
   };
 
+  const displayedResults = previewResults.length > 0 ? previewResults : results;
+  const displayedByYear = previewResults.length > 0 ? previewByYear : resultsByYear;
+
   return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
+    <section className="historical-results-section mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#071028]">
       <input
         ref={fileInputRef}
         type="file"
@@ -368,10 +613,10 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
         className="hidden"
       />
 
-      <div className="flex flex-col gap-4 border-b border-[#1e253c] px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-4 border-b border-white/10 bg-[#0b1735] px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h3 className="text-sm font-bold uppercase tracking-wide text-white">Historial de resultados</h3>
-          <p className="mt-1 text-xs text-slate-400">Resultados historicos por metodo y año, vinculados a esta tarea matriz.</p>
+          <p className="mt-1 text-xs text-slate-400">Cuadros tecnicos por ejercicio fiscal y metodo de rentabilidad.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -379,7 +624,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
             onClick={() => {
               void loadResults();
             }}
-            className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
+            className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
           >
             <RefreshCw size={14} className={clsx(isLoading && 'animate-spin')} />
             Actualizar
@@ -388,7 +633,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
             type="button"
             onClick={exportResults}
             disabled={results.length === 0}
-            className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={14} />
             Exportar Excel
@@ -422,7 +667,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
                   Preview de importacion
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
-                  {sourceFileName} - {previewResults.length} registros detectados en {previewMethods.join(', ')}.
+                  {sourceFileName} - {previewResults.length} cuadros detectados. Revisa el preview antes de reemplazar.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -433,7 +678,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
                     setSourceFileName('');
                   }}
                   disabled={isSaving}
-                  className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:bg-[#1e253c]"
+                  className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
                 >
                   <X size={14} />
                   Cancelar
@@ -454,80 +699,51 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
           </div>
         )}
 
-        {methods.length > 0 && (
-          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-[#1e253c] bg-[#121827]/60 p-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-              <BarChart3 size={15} className="text-[#8b5cf6]" />
-              Metodos visibles
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {methods.map((method) => {
-                const isSelected = selectedMethods.includes(method);
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => toggleMethod(method)}
-                    className={clsx(
-                      'rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
-                      isSelected
-                        ? 'border-[#8b5cf6]/50 bg-[#8b5cf6]/15 text-[#c4b5fd]'
-                        : 'border-[#2a334e] bg-[#0e121e]/45 text-slate-400 hover:border-[#506ff0]/50 hover:text-white',
-                    )}
-                  >
-                    {method}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {filteredResults.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-5">
+        {displayedResults.length > 0 ? (
+          <div className="space-y-3">
             {YEARS.map((year) => {
-              const yearResults = resultsByYear[year] || [];
+              const yearResults = displayedByYear[year] || [];
+              const isExpanded = expandedYears.includes(year);
+
               return (
-                <article key={year} className="rounded-2xl border border-[#1e253c] bg-[#121827]/70 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-lg font-bold text-white">{year}</h4>
-                    <span className="rounded-full bg-[#1e253c] px-2 py-1 text-[10px] font-semibold text-slate-400">
+                <article key={year} className="overflow-hidden rounded-xl border border-white/10 bg-[#08132d]">
+                  <button
+                    type="button"
+                    onClick={() => toggleYear(year)}
+                    className="flex w-full items-center justify-between gap-4 bg-[#0b1735] px-4 py-3 text-left transition-colors hover:bg-[#0d1b3d]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ChevronDown size={16} className={clsx('text-[#9fb0ff] transition-transform', isExpanded && 'rotate-180')} />
+                      <span className="text-base font-bold text-white">{year}</span>
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-slate-300">
                       {yearResults.length} metodos
                     </span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {yearResults.length === 0 && (
-                      <p className="rounded-xl border border-dashed border-[#2a334e] px-3 py-6 text-center text-xs text-slate-500">Sin datos</p>
-                    )}
-                    {yearResults.map((result) => (
-                      <div key={`${result.method}-${result.year}`} className="rounded-xl border border-[#1e253c] bg-[#0e121e]/45 p-3">
-                        <p className="text-xs font-bold uppercase tracking-wide text-[#c4b5fd]">{result.method}</p>
-                        <div className="mt-3 grid gap-2 text-xs">
-                          {[
-                            ['Cuartil inferior', result.lower_quartile],
-                            ['Mediana', result.median],
-                            ['Cuartil superior', result.upper_quartile],
-                            [`Resultado ${year}`, result.company_result],
-                            ['Promedio 3 anos', result.three_year_average],
-                          ].map(([label, value]) => (
-                            <div key={String(label)} className="flex items-center justify-between gap-3">
-                              <span className="text-slate-500">{label}</span>
-                              <span className="font-bold text-white">{formatPercent(value as number | null)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="space-y-4 p-4">
+                      {yearResults.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-white/10 px-3 py-6 text-center text-xs text-slate-500">Sin datos para este ejercicio.</p>
+                      ) : (
+                        yearResults.map((result, index) => (
+                          <TechnicalResultTable
+                            key={`${getMethod(result)}-${getExerciseYear(result)}-${'id' in result ? result.id : index}`}
+                            result={result}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
                 </article>
               );
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-[#2a334e] bg-[#121827]/40 px-4 py-8 text-center">
+          <div className="rounded-xl border border-dashed border-white/10 bg-[#08132d] px-4 py-8 text-center">
             <FileSpreadsheet size={26} className="mx-auto text-slate-500" />
             <p className="mt-3 text-sm font-semibold text-white">Aun no hay historial de resultados</p>
-            <p className="mt-1 text-xs text-slate-500">Importa un Excel con años 2025 a 2021 para alimentar esta seccion.</p>
+            <p className="mt-1 text-xs text-slate-500">Importa un unico Excel con bloques ROS, CAN, ROA, PCNC u otros metodos.</p>
           </div>
         )}
 
@@ -536,36 +752,36 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
             <button
               type="button"
               onClick={() => setShowDetailTable((current) => !current)}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-[#8b5cf6] hover:bg-[#1e253c]"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-[#9fb0ff] hover:bg-white/5"
             >
               <ChevronDown size={14} className={clsx('transition-transform', showDetailTable && 'rotate-180')} />
               Ver tabla detallada
             </button>
 
             {showDetailTable && (
-              <div className="mt-3 max-h-[360px] overflow-auto rounded-xl border border-[#1e253c] scrollbar-hide">
-                <table className="w-full min-w-[920px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#121827]">
-                    <tr className="border-b border-[#1e253c] text-[10px] uppercase tracking-wide text-slate-500">
+              <div className="mt-3 max-h-[360px] overflow-auto rounded-xl border border-white/10">
+                <table className="w-full min-w-[860px] border-collapse text-left">
+                  <thead className="sticky top-0 z-10 bg-[#0b1735]">
+                    <tr className="border-b border-white/10 text-[10px] uppercase tracking-wide text-slate-400">
+                      <th className="px-4 py-3">Ejercicio</th>
                       <th className="px-4 py-3">Metodo</th>
-                      <th className="px-4 py-3">Año</th>
+                      <th className="px-4 py-3">Parte analizada</th>
                       <th className="px-4 py-3 text-right">Cuartil inferior</th>
                       <th className="px-4 py-3 text-right">Mediana</th>
                       <th className="px-4 py-3 text-right">Cuartil superior</th>
-                      <th className="px-4 py-3 text-right">Resultado</th>
-                      <th className="px-4 py-3 text-right">Promedio 3 años</th>
+                      <th className="px-4 py-3 text-right">Promedio</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredResults.map((result) => (
-                      <tr key={result.id} className="border-b border-[#1e253c]/70 last:border-0 hover:bg-[#1e253c]/40">
-                        <td className="px-4 py-3 text-xs font-bold text-white">{result.method}</td>
-                        <td className="px-4 py-3 text-xs text-slate-300">{result.year}</td>
-                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatPercent(result.lower_quartile)}</td>
-                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatPercent(result.median)}</td>
-                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatPercent(result.upper_quartile)}</td>
-                        <td className="px-4 py-3 text-right text-xs font-semibold text-white">{formatPercent(result.company_result)}</td>
-                        <td className="px-4 py-3 text-right text-xs font-semibold text-white">{formatPercent(result.three_year_average)}</td>
+                    {results.map((result) => (
+                      <tr key={result.id} className="border-b border-white/10 last:border-0 hover:bg-white/5">
+                        <td className="px-4 py-3 text-xs font-semibold text-white">{getExerciseYear(result)}</td>
+                        <td className="px-4 py-3 text-xs font-bold text-white">{getMethod(result)}</td>
+                        <td className="px-4 py-3 text-xs text-slate-300">{result.company_name || getTechnicalTable(result).company.label}</td>
+                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatNumber(result.lower_quartile)}</td>
+                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatNumber(result.median)}</td>
+                        <td className="px-4 py-3 text-right text-xs text-slate-300">{formatNumber(result.upper_quartile)}</td>
+                        <td className="px-4 py-3 text-right text-xs font-semibold text-white">{formatNumber(result.average_value ?? result.three_year_average)}</td>
                       </tr>
                     ))}
                   </tbody>

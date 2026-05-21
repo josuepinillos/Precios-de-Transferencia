@@ -51,13 +51,24 @@ create table if not exists public.controlled_operations (
 create table if not exists public.historical_results (
   id uuid primary key default gen_random_uuid(),
   task_id uuid not null references public.tasks(id) on delete cascade,
-  method text not null,
-  year integer not null check (year between 2021 and 2025),
+  method text,
+  year integer check (year between 2021 and 2025),
+  exercise_year integer check (exercise_year between 2021 and 2025),
+  method_name text,
+  company_name text,
   lower_quartile numeric,
   median numeric,
   upper_quartile numeric,
   company_result numeric,
   three_year_average numeric,
+  company_2025 numeric,
+  company_2024 numeric,
+  company_2023 numeric,
+  average_value numeric,
+  comparable_2025 numeric,
+  comparable_2024 numeric,
+  comparable_2023 numeric,
+  technical_table jsonb,
   source_file_name text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -76,8 +87,32 @@ on public.controlled_operations(task_id, section);
 create index if not exists historical_results_task_method_idx
 on public.historical_results(task_id, method);
 
+create index if not exists historical_results_task_method_exercise_idx
+on public.historical_results(task_id, method_name, exercise_year);
+
 alter table if exists public.subtasks
 add column if not exists assignee jsonb;
+
+alter table if exists public.historical_results
+add column if not exists exercise_year integer check (exercise_year between 2021 and 2025),
+add column if not exists method_name text,
+add column if not exists company_name text,
+add column if not exists company_2025 numeric,
+add column if not exists company_2024 numeric,
+add column if not exists company_2023 numeric,
+add column if not exists average_value numeric,
+add column if not exists comparable_2025 numeric,
+add column if not exists comparable_2024 numeric,
+add column if not exists comparable_2023 numeric,
+add column if not exists technical_table jsonb;
+
+update public.historical_results
+set exercise_year = coalesce(exercise_year, year),
+    method_name = coalesce(method_name, method),
+    average_value = coalesce(average_value, three_year_average)
+where exercise_year is null
+   or method_name is null
+   or average_value is null;
 
 update public.subtasks subtask
 set assignee = task.assignee
