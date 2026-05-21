@@ -2,7 +2,7 @@
 
 import React from 'react';
 import clsx from 'clsx';
-import { Check, ExternalLink, Mail, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
+import { Check, ExternalLink, Mail, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Task } from '../data/mockData';
 import { getSupabaseClient } from '../lib/supabase';
 
@@ -62,14 +62,12 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
   const [form, setForm] = React.useState<ClientEmailForm>(initialForm);
   const [editingEmailId, setEditingEmailId] = React.useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   const loadEmails = React.useCallback(async () => {
     try {
-      setIsLoading(true);
       setError(null);
       const { data, error } = await getSupabaseClient()
         .from('client_emails')
@@ -82,8 +80,6 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
     } catch (error) {
       setError(error instanceof Error ? error.message : 'No se pudieron cargar los correos del cliente.');
       console.error('[Supabase] No se pudieron cargar los correos del cliente:', error);
-    } finally {
-      setIsLoading(false);
     }
   }, [task.id]);
 
@@ -205,16 +201,6 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
           <p className="mt-1 text-xs text-slate-400">Registro manual de comunicaciones relevantes para esta tarea matriz.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void loadEmails();
-            }}
-            className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
-          >
-            <RefreshCw size={14} className={clsx(isLoading && 'animate-spin')} />
-            Actualizar
-          </button>
           <button
             type="button"
             onClick={openCreateModal}

@@ -3,7 +3,7 @@
 import React from 'react';
 import clsx from 'clsx';
 import * as XLSX from 'xlsx';
-import { AlertCircle, Check, Download, FileSpreadsheet, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Check, Download, FileSpreadsheet, Upload, X } from 'lucide-react';
 import { Task } from '../data/mockData';
 import { Database, getSupabaseClient } from '../lib/supabase';
 
@@ -507,16 +507,6 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void loadOperations();
-            }}
-            className="controlled-operations-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
-          >
-            <RefreshCw size={14} className={clsx(isLoading && 'animate-spin')} />
-            Actualizar
-          </button>
           <button
             type="button"
             onClick={handleExport}
