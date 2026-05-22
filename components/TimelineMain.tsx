@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Timeline } from './Timeline';
 import { TaskPanel } from './TaskPanel';
 import { Search, Plus } from 'lucide-react';
@@ -8,49 +8,9 @@ import { useDashboardStore } from '../store/useDashboardStore';
 import { NewTaskModal } from './NewTaskModal';
 import { USERS } from '../data/mockData';
 
-const TIMELINE_PANEL_SIZE_KEY = 'timeline-detail-panel-percent';
-const MIN_RIGHT_PANEL = 22;
-const MAX_RIGHT_PANEL = 45;
-const DEFAULT_RIGHT_PANEL = 30;
-
-const clampPanelPercent = (value: number) =>
-  Math.min(MAX_RIGHT_PANEL, Math.max(MIN_RIGHT_PANEL, value));
-
 export const TimelineMain = () => {
-  const { filters, setFilters, selectedTaskId } = useDashboardStore();
+  const { filters, setFilters } = useDashboardStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [rightPanelPercent, setRightPanelPercent] = useState(() => {
-    if (typeof window === 'undefined') return DEFAULT_RIGHT_PANEL;
-    const savedSize = window.localStorage.getItem(TIMELINE_PANEL_SIZE_KEY);
-    const parsedSize = savedSize ? Number(savedSize) : Number.NaN;
-    return Number.isFinite(parsedSize) ? clampPanelPercent(parsedSize) : DEFAULT_RIGHT_PANEL;
-  });
-  const [isResizing, setIsResizing] = useState(false);
-  const layoutRef = useRef<HTMLDivElement>(null);
-  const leftPanelPercent = 100 - rightPanelPercent;
-
-  const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!layoutRef.current) return;
-    event.preventDefault();
-    setIsResizing(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handleResize = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isResizing || !layoutRef.current) return;
-
-    const rect = layoutRef.current.getBoundingClientRect();
-    const nextLeftPercent = ((event.clientX - rect.left) / rect.width) * 100;
-    const nextRightPercent = clampPanelPercent(100 - nextLeftPercent);
-    setRightPanelPercent(nextRightPercent);
-    window.localStorage.setItem(TIMELINE_PANEL_SIZE_KEY, String(nextRightPercent));
-  };
-
-  const stopResize = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isResizing) return;
-    setIsResizing(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
-  };
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
@@ -92,33 +52,11 @@ export const TimelineMain = () => {
       </div>
 
       {/* Main Content */}
-      <div
-        ref={layoutRef}
-        className="flex flex-col gap-4 lg:gap-6 xl:h-[700px] xl:flex-row xl:gap-0"
-        style={isResizing ? { cursor: 'col-resize', userSelect: 'none' } : undefined}
-      >
-        <div className="min-w-0 flex-1 overflow-hidden xl:flex-none" style={selectedTaskId ? { flexBasis: `${leftPanelPercent}%` } : undefined}>
+      <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 xl:h-[700px]">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <Timeline />
         </div>
-        {selectedTaskId && (
-          <>
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Redimensionar panel de detalle"
-              onPointerDown={startResize}
-              onPointerMove={handleResize}
-              onPointerUp={stopResize}
-              onPointerCancel={stopResize}
-              className="group hidden w-6 flex-shrink-0 cursor-col-resize items-stretch justify-center px-2 xl:flex"
-            >
-              <div className="my-2 w-px rounded-full bg-[#1e253c] transition-all duration-200 group-hover:w-[3px] group-hover:bg-[#506ff0] group-hover:shadow-[0_0_18px_rgba(80,111,240,0.55)]" />
-            </div>
-            <div className="min-w-0 xl:flex-none" style={{ flexBasis: `${rightPanelPercent}%` }}>
-              <TaskPanel />
-            </div>
-          </>
-        )}
+        <TaskPanel />
       </div>
       
       <NewTaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
