@@ -248,7 +248,7 @@ export const TaskPanel = () => {
         initial={{ opacity: 0, y: 24, x: 0 }}
         animate={{ opacity: 1, y: 0, x: 0 }}
         exit={{ opacity: 0, y: 24, x: 0 }}
-        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full glass rounded-t-2xl border border-[#1e253c] p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:w-[350px] xl:h-full xl:flex-shrink-0 xl:p-6"
+        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full glass rounded-t-2xl border border-[#1e253c] p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:h-full xl:min-w-0 xl:p-6"
       >
         <div className="flex justify-between items-start mb-6 gap-2">
           {isEditing ? (
