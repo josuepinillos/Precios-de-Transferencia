@@ -17,7 +17,7 @@ create table if not exists public.subtasks (
   title text not null,
   completed boolean not null default false,
   assignee jsonb,
-  sort_order integer,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -80,7 +80,7 @@ create index if not exists client_emails_task_id_idx
 on public.client_emails(task_id);
 
 create index if not exists subtasks_task_sort_order_idx
-on public.subtasks(task_id, sort_order);
+on public.subtasks(task_id, sort_order, created_at);
 
 create index if not exists controlled_operations_task_id_idx
 on public.controlled_operations(task_id);
@@ -128,7 +128,7 @@ where subtask.task_id = task.id
 with ranked_subtasks as (
   select
     id,
-    row_number() over (partition by task_id order by created_at asc, id asc) - 1 as next_sort_order
+    row_number() over (partition by task_id order by created_at asc, id asc) as next_sort_order
   from public.subtasks
   where sort_order is null
 )
@@ -136,6 +136,12 @@ update public.subtasks subtask
 set sort_order = ranked_subtasks.next_sort_order
 from ranked_subtasks
 where subtask.id = ranked_subtasks.id;
+
+alter table if exists public.subtasks
+alter column sort_order set not null;
+
+alter table if exists public.subtasks
+alter column sort_order set default 0;
 
 create or replace function public.set_updated_at()
 returns trigger

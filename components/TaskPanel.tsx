@@ -1,6 +1,26 @@
 "use client";
 
+/* eslint-disable react-hooks/refs */
+
 import React, { useState, useEffect } from 'react';
+import {
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
 import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil, MoveRight, GripVertical } from 'lucide-react';
@@ -10,10 +30,57 @@ import { DatePicker2026, formatPickerDate } from './DatePicker2026';
 
 const TEAM_MEMBERS = Object.values(USERS);
 
+type SortableSubtaskRenderProps = Pick<
+  ReturnType<typeof useSortable>,
+  'attributes' | 'listeners' | 'setActivatorNodeRef' | 'isDragging'
+>;
+
+const SortableSubtaskRow = ({
+  id,
+  disabled,
+  children,
+}: {
+  id: string;
+  disabled?: boolean;
+  children: (props: SortableSubtaskRenderProps) => React.ReactNode;
+}) => {
+  const sortable = useSortable({ id, disabled });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition,
+    zIndex: sortable.isDragging ? 20 : undefined,
+  };
+
+  return (
+    <div
+      ref={sortable.setNodeRef}
+      style={style}
+      className={clsx(
+        "flex items-center justify-between gap-2 rounded-lg border border-transparent p-2 transition-all group hover:bg-[#1e253c]/50",
+        sortable.isDragging &&
+          "scale-[1.01] border-[#506ff0]/60 bg-[#1e253c]/80 opacity-95 shadow-[0_14px_32px_rgba(15,23,42,0.32)]",
+      )}
+    >
+      {children({
+        attributes: sortable.attributes,
+        listeners: sortable.listeners,
+        setActivatorNodeRef: sortable.setActivatorNodeRef,
+        isDragging: sortable.isDragging,
+      })}
+    </div>
+  );
+};
+
 export const TaskPanel = () => {
   const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask, reorderSubtasks, error } = useDashboardStore();
   
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
+  const subtaskIds = selectedTask?.subtasks.map((subtask) => subtask.id) ?? [];
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 140, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -32,8 +99,6 @@ export const TaskPanel = () => {
   const [moveDateBlock, setMoveDateBlock] = useState('2026-05-16');
   const [moveDateError, setMoveDateError] = useState<string | null>(null);
   const [isMovingTask, setIsMovingTask] = useState(false);
-  const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   const getAssigneeByName = (name: string, fallback = selectedTask?.assignee) =>
     TEAM_MEMBERS.find((member) => member.name === name) || fallback || TEAM_MEMBERS[0];
@@ -86,8 +151,6 @@ export const TaskPanel = () => {
       setMoveDateBlock(selectedTask.dateBlock);
       setMoveDateError(null);
       setIsMoveModalOpen(false);
-      setDraggedSubtaskId(null);
-      setDropTarget(null);
     }
   }, [selectedTask]);
 
@@ -163,30 +226,14 @@ export const TaskPanel = () => {
     }
   };
 
-  const getDropPosition = (event: React.DragEvent<HTMLElement>): 'before' | 'after' => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return event.clientY - rect.top < rect.height / 2 ? 'before' : 'after';
-  };
+  const handleSubtaskDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!selectedTask || !over || active.id === over.id) return;
 
-  const handleSubtaskDrop = async (event: React.DragEvent<HTMLElement>, overSubtaskId: string) => {
-    event.preventDefault();
-    if (!selectedTask || !draggedSubtaskId || draggedSubtaskId === overSubtaskId) {
-      setDraggedSubtaskId(null);
-      setDropTarget(null);
-      return;
-    }
+    const oldIndex = subtaskIds.indexOf(String(active.id));
+    const newIndex = subtaskIds.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
 
-    const position = getDropPosition(event);
-    const currentIds = selectedTask.subtasks.map((subtask) => subtask.id);
-    const nextIds = currentIds.filter((subtaskId) => subtaskId !== draggedSubtaskId);
-    const overIndex = nextIds.indexOf(overSubtaskId);
-    if (overIndex === -1) return;
-
-    nextIds.splice(position === 'after' ? overIndex + 1 : overIndex, 0, draggedSubtaskId);
-    setDraggedSubtaskId(null);
-    setDropTarget(null);
-
-    if (nextIds.every((subtaskId, index) => subtaskId === currentIds[index])) return;
+    const nextIds = arrayMove(subtaskIds, oldIndex, newIndex);
 
     try {
       await reorderSubtasks(selectedTask.id, nextIds);
@@ -321,34 +368,17 @@ export const TaskPanel = () => {
               </h3>
             </div>
             
-            <div className="flex flex-col gap-2">
-              {selectedTask.subtasks.map(subtask => {
-                const subtaskAssignee = subtask.assignee || selectedTask.assignee;
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => void handleSubtaskDragEnd(event)}>
+              <SortableContext items={subtaskIds} strategy={verticalListSortingStrategy}>
+                <div className="flex flex-col gap-2">
+                  {selectedTask.subtasks.map(subtask => {
+                    const subtaskAssignee = subtask.assignee || selectedTask.assignee;
 
-                return (
-                <div
-                  key={subtask.id}
-                  onDragOver={(event) => {
-                    if (!draggedSubtaskId || draggedSubtaskId === subtask.id) return;
-                    event.preventDefault();
-                    setDropTarget({ id: subtask.id, position: getDropPosition(event) });
-                  }}
-                  onDrop={(event) => {
-                    void handleSubtaskDrop(event, subtask.id);
-                  }}
-                  onDragLeave={() => {
-                    if (dropTarget?.id === subtask.id) setDropTarget(null);
-                  }}
-                  className={clsx(
-                    "flex items-center justify-between gap-2 rounded-lg border border-transparent p-2 transition-colors group hover:bg-[#1e253c]/50",
-                    draggedSubtaskId === subtask.id && "opacity-50",
-                    dropTarget?.id === subtask.id &&
-                      (dropTarget.position === 'before'
-                        ? "border-t-[#506ff0] shadow-[inset_0_2px_0_rgba(80,111,240,0.85)]"
-                        : "border-b-[#506ff0] shadow-[inset_0_-2px_0_rgba(80,111,240,0.85)]"),
-                  )}
-                >
-                  {editingSubtaskId === subtask.id ? (
+                    return (
+                      <SortableSubtaskRow key={subtask.id} id={subtask.id} disabled={editingSubtaskId === subtask.id}>
+                        {({ attributes, listeners, setActivatorNodeRef, isDragging }) => (
+                          <>
+                            {editingSubtaskId === subtask.id ? (
                     <form 
                       onSubmit={(e) => handleEditSubmit(subtask.id, e)} 
                       className="flex w-full flex-col gap-2"
@@ -392,24 +422,18 @@ export const TaskPanel = () => {
                     </form>
                   ) : (
                     <>
-                      <div
-                        draggable
-                        onDragStart={(event) => {
-                          event.dataTransfer.effectAllowed = 'move';
-                          event.dataTransfer.setData('text/plain', subtask.id);
-                          setDraggedSubtaskId(subtask.id);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedSubtaskId(null);
-                          setDropTarget(null);
-                        }}
+                      <button
+                        type="button"
+                        ref={setActivatorNodeRef}
+                        {...attributes}
+                        {...listeners}
                         className="flex h-9 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#1e253c] hover:text-slate-200 active:cursor-grabbing"
                         title="Arrastrar para reordenar"
-                        role="button"
                         aria-label="Arrastrar subtarea"
+                        aria-pressed={isDragging}
                       >
                         <GripVertical size={15} />
-                      </div>
+                      </button>
                       <div 
                         className="min-w-0 flex items-center gap-3 flex-1 cursor-pointer py-1"
                         onClick={() => {
@@ -470,10 +494,14 @@ export const TaskPanel = () => {
                       </div>
                     </>
                   )}
+                          </>
+                        )}
+                      </SortableSubtaskRow>
+                    );
+                  })}
                 </div>
-                );
-              })}
-            </div>
+              </SortableContext>
+            </DndContext>
 
             {isAddingSubtask ? (
               <form onSubmit={handleAddSubtask} className="mt-4 flex flex-col gap-2">

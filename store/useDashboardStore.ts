@@ -289,6 +289,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
         .select('*, subtasks(*)')
         .order('date_block', { ascending: true })
         .order('created_at', { ascending: true })
+        .order('sort_order', { referencedTable: 'subtasks', ascending: true, nullsFirst: false })
         .order('created_at', { referencedTable: 'subtasks', ascending: true });
 
       if (error) {
@@ -429,7 +430,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     const id = uuidv4();
     const parentTask = get().tasks.find((task) => task.id === taskId);
     const subtaskAssignee = assignee || parentTask?.assignee;
-    const nextSortOrder = parentTask?.subtasks.length ?? 0;
+    const nextSortOrder = (parentTask?.subtasks.length ?? 0) + 1;
     const insertPayload: SubtaskInsert = {
       id,
       task_id: taskId,
@@ -584,11 +585,11 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
       throw new Error(message);
     }
 
-    const sortOrderById = new Map(orderedSubtaskIds.map((subtaskId, index) => [subtaskId, index]));
+    const sortOrderById = new Map(orderedSubtaskIds.map((subtaskId, index) => [subtaskId, index + 1]));
     const reorderedSubtasks = orderedSubtaskIds
       .map((subtaskId) => currentSubtasks.find((subtask) => subtask.id === subtaskId))
       .filter((subtask): subtask is Subtask => Boolean(subtask))
-      .map((subtask, index) => ({ ...subtask, sortOrder: index }));
+      .map((subtask, index) => ({ ...subtask, sortOrder: index + 1 }));
 
     await withRevertedTasks(
       () =>
@@ -601,7 +602,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
           orderedSubtaskIds.map((subtaskId) =>
             supabase
               .from('subtasks')
-              .update({ sort_order: sortOrderById.get(subtaskId) ?? 0 })
+              .update({ sort_order: sortOrderById.get(subtaskId) ?? orderedSubtaskIds.length })
               .eq('id', subtaskId)
               .eq('task_id', taskId)
               .select('id')

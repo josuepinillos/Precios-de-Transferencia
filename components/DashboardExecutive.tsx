@@ -9,7 +9,6 @@ import {
   Clock3,
   Edit2,
   Folder,
-  GripVertical,
   MoreVertical,
   Plus,
   Search,
@@ -68,7 +67,6 @@ export const DashboardExecutive = () => {
     editSubtask,
     deleteSubtask,
     addSubtask,
-    reorderSubtasks,
     error,
   } = useDashboardStore();
   const tasks = getFilteredTasks();
@@ -82,8 +80,6 @@ export const DashboardExecutive = () => {
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [isSavingSubtask, setIsSavingSubtask] = React.useState(false);
   const [matrixSearch, setMatrixSearch] = React.useState('');
-  const [draggedSubtaskId, setDraggedSubtaskId] = React.useState<string | null>(null);
-  const [dropTarget, setDropTarget] = React.useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || tasks[0] || null;
   const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
@@ -195,38 +191,6 @@ export const DashboardExecutive = () => {
     }
   };
 
-  const getDropPosition = (event: React.DragEvent<HTMLElement>): 'before' | 'after' => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return event.clientY - rect.top < rect.height / 2 ? 'before' : 'after';
-  };
-
-  const handleSubtaskDrop = async (event: React.DragEvent<HTMLElement>, overSubtaskId: string) => {
-    event.preventDefault();
-    if (!selectedTask || !draggedSubtaskId || draggedSubtaskId === overSubtaskId) {
-      setDraggedSubtaskId(null);
-      setDropTarget(null);
-      return;
-    }
-
-    const position = getDropPosition(event);
-    const currentIds = selectedTask.subtasks.map((subtask) => subtask.id);
-    const nextIds = currentIds.filter((subtaskId) => subtaskId !== draggedSubtaskId);
-    const overIndex = nextIds.indexOf(overSubtaskId);
-    if (overIndex === -1) return;
-
-    nextIds.splice(position === 'after' ? overIndex + 1 : overIndex, 0, draggedSubtaskId);
-    setDraggedSubtaskId(null);
-    setDropTarget(null);
-
-    if (nextIds.every((subtaskId, index) => subtaskId === currentIds[index])) return;
-
-    try {
-      await reorderSubtasks(selectedTask.id, nextIds);
-    } catch (error) {
-      console.error('[Supabase] No se pudo reordenar la subtarea desde Dashboard:', error);
-    }
-  };
-
   if (tasks.length === 0) {
     return (
       <section className="glass rounded-2xl border border-[#1e253c] p-6 sm:p-8 text-center">
@@ -283,8 +247,6 @@ export const DashboardExecutive = () => {
                 setSelectedTaskId(task.id);
                 cancelEditingSubtask();
                 setIsAddingSubtask(false);
-                setDraggedSubtaskId(null);
-                setDropTarget(null);
               }}
               className={clsx(
                 "min-w-[280px] sm:min-w-[320px] max-w-[360px] flex-1 snap-start rounded-2xl border p-4 sm:p-5 text-left transition-all duration-300",
@@ -403,25 +365,7 @@ export const DashboardExecutive = () => {
                   return (
                     <div
                       key={subtask.id}
-                      onDragOver={(event) => {
-                        if (!draggedSubtaskId || draggedSubtaskId === subtask.id) return;
-                        event.preventDefault();
-                        setDropTarget({ id: subtask.id, position: getDropPosition(event) });
-                      }}
-                      onDrop={(event) => {
-                        void handleSubtaskDrop(event, subtask.id);
-                      }}
-                      onDragLeave={() => {
-                        if (dropTarget?.id === subtask.id) setDropTarget(null);
-                      }}
-                      className={clsx(
-                        "rounded-xl border border-transparent p-2 transition-colors hover:bg-[#1e253c]/50",
-                        draggedSubtaskId === subtask.id && "opacity-50",
-                        dropTarget?.id === subtask.id &&
-                          (dropTarget.position === 'before'
-                            ? "border-t-[#506ff0] shadow-[inset_0_2px_0_rgba(80,111,240,0.85)]"
-                            : "border-b-[#506ff0] shadow-[inset_0_-2px_0_rgba(80,111,240,0.85)]"),
-                      )}
+                      className="rounded-xl border border-transparent p-2 transition-colors hover:bg-[#1e253c]/50"
                     >
                       {editingSubtaskId === subtask.id ? (
                         <form onSubmit={(event) => handleEditSubtask(subtask.id, event)} className="flex flex-col gap-2">
@@ -453,24 +397,6 @@ export const DashboardExecutive = () => {
                         </form>
                       ) : (
                         <div className="flex items-center gap-3">
-                          <div
-                            draggable
-                            onDragStart={(event) => {
-                              event.dataTransfer.effectAllowed = 'move';
-                              event.dataTransfer.setData('text/plain', subtask.id);
-                              setDraggedSubtaskId(subtask.id);
-                            }}
-                            onDragEnd={() => {
-                              setDraggedSubtaskId(null);
-                              setDropTarget(null);
-                            }}
-                            className="flex h-9 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#1e253c] hover:text-slate-200 active:cursor-grabbing"
-                            title="Arrastrar para reordenar"
-                            role="button"
-                            aria-label="Arrastrar subtarea"
-                          >
-                            <GripVertical size={15} />
-                          </div>
                           <button
                             type="button"
                             onClick={() => {
