@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
-import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil, MoveRight } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Plus, Check, Edit2, Trash2, Pencil, MoveRight, GripVertical } from 'lucide-react';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DatePicker2026, formatPickerDate } from './DatePicker2026';
@@ -11,7 +11,7 @@ import { DatePicker2026, formatPickerDate } from './DatePicker2026';
 const TEAM_MEMBERS = Object.values(USERS);
 
 export const TaskPanel = () => {
-  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask, error } = useDashboardStore();
+  const { tasks, selectedTaskId, selectTask, toggleSubtask, getTaskProgress, updateTask, addSubtask, deleteTask, editSubtask, deleteSubtask, reorderSubtasks, error } = useDashboardStore();
   
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
 
@@ -32,6 +32,8 @@ export const TaskPanel = () => {
   const [moveDateBlock, setMoveDateBlock] = useState('2026-05-16');
   const [moveDateError, setMoveDateError] = useState<string | null>(null);
   const [isMovingTask, setIsMovingTask] = useState(false);
+  const [draggedSubtaskId, setDraggedSubtaskId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
 
   const getAssigneeByName = (name: string, fallback = selectedTask?.assignee) =>
     TEAM_MEMBERS.find((member) => member.name === name) || fallback || TEAM_MEMBERS[0];
@@ -84,6 +86,8 @@ export const TaskPanel = () => {
       setMoveDateBlock(selectedTask.dateBlock);
       setMoveDateError(null);
       setIsMoveModalOpen(false);
+      setDraggedSubtaskId(null);
+      setDropTarget(null);
     }
   }, [selectedTask]);
 
@@ -156,6 +160,38 @@ export const TaskPanel = () => {
       console.error('[Supabase] No se pudo mover la tarea:', error);
     } finally {
       setIsMovingTask(false);
+    }
+  };
+
+  const getDropPosition = (event: React.DragEvent<HTMLElement>): 'before' | 'after' => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return event.clientY - rect.top < rect.height / 2 ? 'before' : 'after';
+  };
+
+  const handleSubtaskDrop = async (event: React.DragEvent<HTMLElement>, overSubtaskId: string) => {
+    event.preventDefault();
+    if (!selectedTask || !draggedSubtaskId || draggedSubtaskId === overSubtaskId) {
+      setDraggedSubtaskId(null);
+      setDropTarget(null);
+      return;
+    }
+
+    const position = getDropPosition(event);
+    const currentIds = selectedTask.subtasks.map((subtask) => subtask.id);
+    const nextIds = currentIds.filter((subtaskId) => subtaskId !== draggedSubtaskId);
+    const overIndex = nextIds.indexOf(overSubtaskId);
+    if (overIndex === -1) return;
+
+    nextIds.splice(position === 'after' ? overIndex + 1 : overIndex, 0, draggedSubtaskId);
+    setDraggedSubtaskId(null);
+    setDropTarget(null);
+
+    if (nextIds.every((subtaskId, index) => subtaskId === currentIds[index])) return;
+
+    try {
+      await reorderSubtasks(selectedTask.id, nextIds);
+    } catch (error) {
+      console.error('[Supabase] No se pudo reordenar la subtarea:', error);
     }
   };
 
@@ -292,7 +328,25 @@ export const TaskPanel = () => {
                 return (
                 <div
                   key={subtask.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-[#1e253c]/50 transition-colors group"
+                  onDragOver={(event) => {
+                    if (!draggedSubtaskId || draggedSubtaskId === subtask.id) return;
+                    event.preventDefault();
+                    setDropTarget({ id: subtask.id, position: getDropPosition(event) });
+                  }}
+                  onDrop={(event) => {
+                    void handleSubtaskDrop(event, subtask.id);
+                  }}
+                  onDragLeave={() => {
+                    if (dropTarget?.id === subtask.id) setDropTarget(null);
+                  }}
+                  className={clsx(
+                    "flex items-center justify-between gap-2 rounded-lg border border-transparent p-2 transition-colors group hover:bg-[#1e253c]/50",
+                    draggedSubtaskId === subtask.id && "opacity-50",
+                    dropTarget?.id === subtask.id &&
+                      (dropTarget.position === 'before'
+                        ? "border-t-[#506ff0] shadow-[inset_0_2px_0_rgba(80,111,240,0.85)]"
+                        : "border-b-[#506ff0] shadow-[inset_0_-2px_0_rgba(80,111,240,0.85)]"),
+                  )}
                 >
                   {editingSubtaskId === subtask.id ? (
                     <form 
@@ -338,6 +392,24 @@ export const TaskPanel = () => {
                     </form>
                   ) : (
                     <>
+                      <div
+                        draggable
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = 'move';
+                          event.dataTransfer.setData('text/plain', subtask.id);
+                          setDraggedSubtaskId(subtask.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedSubtaskId(null);
+                          setDropTarget(null);
+                        }}
+                        className="flex h-9 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#1e253c] hover:text-slate-200 active:cursor-grabbing"
+                        title="Arrastrar para reordenar"
+                        role="button"
+                        aria-label="Arrastrar subtarea"
+                      >
+                        <GripVertical size={15} />
+                      </div>
                       <div 
                         className="min-w-0 flex items-center gap-3 flex-1 cursor-pointer py-1"
                         onClick={() => {

@@ -49,6 +49,7 @@ export type Database = {
           title: string;
           completed: boolean;
           assignee: Json | null;
+          sort_order: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -58,6 +59,7 @@ export type Database = {
           title: string;
           completed?: boolean;
           assignee?: Json | null;
+          sort_order?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -65,6 +67,7 @@ export type Database = {
           title?: string;
           completed?: boolean;
           assignee?: Json | null;
+          sort_order?: number | null;
           updated_at?: string;
         };
         Relationships: [

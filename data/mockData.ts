@@ -11,6 +11,7 @@ export type Subtask = {
   completed: boolean;
   date?: string;
   assignee?: Assignee;
+  sortOrder?: number;
 };
 
 export type Task = {

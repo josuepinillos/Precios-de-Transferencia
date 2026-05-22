@@ -55,6 +55,7 @@ interface DashboardState {
   toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   editSubtask: (taskId: string, subtaskId: string, newTitle: string, assignee?: Assignee) => Promise<void>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  reorderSubtasks: (taskId: string, orderedSubtaskIds: string[]) => Promise<void>;
 
   getTaskProgress: (taskId: string) => number;
   getFilteredTasks: () => Task[];
@@ -122,12 +123,25 @@ const formatTaskDate = (date: string) => {
   }).format(parsedDate);
 };
 
+const getSubtaskSortValue = (subtask: Pick<Subtask, 'sortOrder' | 'date' | 'id'>, fallbackIndex: number) =>
+  subtask.sortOrder ?? fallbackIndex;
+
+const sortSubtasks = <T extends Pick<Subtask, 'sortOrder' | 'id' | 'date'>>(subtasks: T[]) =>
+  [...subtasks].sort((left, right) => {
+    const leftIndex = subtasks.indexOf(left);
+    const rightIndex = subtasks.indexOf(right);
+    const sortDifference = getSubtaskSortValue(left, leftIndex) - getSubtaskSortValue(right, rightIndex);
+    if (sortDifference !== 0) return sortDifference;
+    return left.id.localeCompare(right.id);
+  });
+
 const mapDbSubtaskToSubtask = (subtask: SubtaskRow, fallbackAssignee?: Assignee): Subtask => ({
   id: subtask.id,
   title: subtask.title,
   completed: subtask.completed,
   date: formatSubtaskDate(subtask.created_at),
   assignee: subtask.assignee ? parseAssignee(subtask.assignee) : fallbackAssignee,
+  sortOrder: subtask.sort_order ?? undefined,
 });
 
 const mapDbTaskToTask = (task: TaskWithSubtasks): Task => {
@@ -142,7 +156,7 @@ const mapDbTaskToTask = (task: TaskWithSubtasks): Task => {
     dateBlock: task.date_block,
     empresa: task.empresa,
     prioridad: task.prioridad,
-    subtasks: (task.subtasks || []).map((subtask) => mapDbSubtaskToSubtask(subtask, assignee)),
+    subtasks: sortSubtasks((task.subtasks || []).map((subtask) => mapDbSubtaskToSubtask(subtask, assignee))),
   };
 };
 
@@ -177,9 +191,11 @@ const mergeSubtaskIntoTasks = (tasks: Task[], subtaskRow: SubtaskRow) => {
     const exists = task.subtasks.some((subtask) => subtask.id === subtaskRow.id);
     return {
       ...task,
-      subtasks: exists
-        ? task.subtasks.map((subtask) => (subtask.id === subtaskRow.id ? mappedSubtask : subtask))
-        : [...task.subtasks, mappedSubtask],
+      subtasks: sortSubtasks(
+        exists
+          ? task.subtasks.map((subtask) => (subtask.id === subtaskRow.id ? mappedSubtask : subtask))
+          : [...task.subtasks, mappedSubtask],
+      ),
     };
   });
 };
@@ -413,12 +429,14 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
     const id = uuidv4();
     const parentTask = get().tasks.find((task) => task.id === taskId);
     const subtaskAssignee = assignee || parentTask?.assignee;
+    const nextSortOrder = parentTask?.subtasks.length ?? 0;
     const insertPayload: SubtaskInsert = {
       id,
       task_id: taskId,
       title,
       completed: false,
       assignee: subtaskAssignee ? (subtaskAssignee as unknown as Json) : null,
+      sort_order: nextSortOrder,
     };
 
     try {
@@ -438,7 +456,7 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
       rememberConfirmedSubtaskCompletion(newSubtask.id, newSubtask.completed);
       set((state) => ({
         tasks: state.tasks.map((task) =>
-          task.id === taskId ? { ...task, subtasks: [...task.subtasks.filter((st) => st.id !== id), newSubtask] } : task,
+          task.id === taskId ? { ...task, subtasks: sortSubtasks([...task.subtasks.filter((st) => st.id !== id), newSubtask]) } : task,
         ),
         error: null,
       }));
@@ -546,6 +564,53 @@ export const useDashboardStore = create<DashboardState>()((set, get) => ({
           ),
         })),
       () => getSupabaseClient().from('subtasks').delete().eq('id', subtaskId),
+      set,
+      get,
+    );
+  },
+
+  reorderSubtasks: async (taskId, orderedSubtaskIds) => {
+    const task = get().tasks.find((item) => item.id === taskId);
+    if (!task) return;
+
+    const currentSubtasks = task.subtasks;
+    const currentIds = currentSubtasks.map((subtask) => subtask.id);
+    const includesAllSubtasks =
+      orderedSubtaskIds.length === currentIds.length && currentIds.every((subtaskId) => orderedSubtaskIds.includes(subtaskId));
+
+    if (!includesAllSubtasks) {
+      const message = 'No se pudo reordenar: la lista de subtareas no coincide con el estado actual.';
+      set({ error: message });
+      throw new Error(message);
+    }
+
+    const sortOrderById = new Map(orderedSubtaskIds.map((subtaskId, index) => [subtaskId, index]));
+    const reorderedSubtasks = orderedSubtaskIds
+      .map((subtaskId) => currentSubtasks.find((subtask) => subtask.id === subtaskId))
+      .filter((subtask): subtask is Subtask => Boolean(subtask))
+      .map((subtask, index) => ({ ...subtask, sortOrder: index }));
+
+    await withRevertedTasks(
+      () =>
+        set((state) => ({
+          tasks: state.tasks.map((item) => (item.id === taskId ? { ...item, subtasks: reorderedSubtasks } : item)),
+        })),
+      async () => {
+        const supabase = getSupabaseClient();
+        const results = await Promise.all(
+          orderedSubtaskIds.map((subtaskId) =>
+            supabase
+              .from('subtasks')
+              .update({ sort_order: sortOrderById.get(subtaskId) ?? 0 })
+              .eq('id', subtaskId)
+              .eq('task_id', taskId)
+              .select('id')
+              .single(),
+          ),
+        );
+        const failedResult = results.find((result) => result.error);
+        return { error: failedResult?.error ? { message: failedResult.error.message } : null };
+      },
       set,
       get,
     );
