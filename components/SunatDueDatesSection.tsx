@@ -62,7 +62,6 @@ const formatSunatDate = (value: string) => {
     .toUpperCase();
 };
 
-const getInitial = (title: string) => title.trim().charAt(0).toUpperCase() || 'C';
 const getLastDigit = (ruc: string) => ruc.slice(-1);
 
 const getDueDate = (ruc: string, condition: SunatCondition) => {
@@ -82,9 +81,9 @@ const getStatus = (daysRemaining: number): SunatStatus => {
 };
 
 const getStatusClasses = (status: SunatStatus) => {
-  if (status === 'VENCIDO') return 'bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30';
-  if (status === 'ATENCION') return 'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30';
-  return 'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30';
+  if (status === 'VENCIDO') return 'sunat-status-overdue bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30';
+  if (status === 'ATENCION') return 'sunat-status-warning bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30';
+  return 'sunat-status-ready bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30';
 };
 
 const getConditionLabel = (condition: SunatCondition) =>
@@ -263,11 +262,11 @@ export const SunatDueDatesSection = () => {
   };
 
   return (
-    <section className="flex flex-col gap-5">
+    <section className="sunat-due-dates-section flex flex-col gap-5">
       <div className="flex flex-col gap-4 border-b border-[#1e253c] pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#2a334e] bg-[#1e253c] text-[#506ff0] shadow-lg">
+            <div className="sunat-header-icon flex h-11 w-11 items-center justify-center rounded-xl border border-[#2a334e] bg-[#1e253c] text-[#506ff0] shadow-lg">
               <CalendarClock size={20} />
             </div>
             <div>
@@ -283,7 +282,7 @@ export const SunatDueDatesSection = () => {
           <button
             type="button"
             onClick={() => referenceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="rounded-lg border border-[#2a334e] bg-[#121827] px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:text-white"
+            className="sunat-secondary-button rounded-lg border border-[#2a334e] bg-[#121827] px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:text-white"
           >
             Ver calendario
           </button>
@@ -297,7 +296,7 @@ export const SunatDueDatesSection = () => {
         </div>
       </div>
 
-      <div className="grid overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="sunat-kpi-strip grid overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ['Total clientes', kpis.total],
           ['Vencidos', kpis.overdue],
@@ -305,14 +304,14 @@ export const SunatDueDatesSection = () => {
           ['Vencen en ≤ 15 días', kpis.le15],
           ['Más de 15 días', kpis.gt15],
         ].map(([label, value]) => (
-          <div key={label} className="border-b border-[#1e253c] px-4 py-3 last:border-b-0 sm:border-r sm:last:border-r-0 lg:border-b-0">
+          <div key={label} className="sunat-kpi-cell border-b border-[#1e253c] px-4 py-3 last:border-b-0 sm:border-r sm:last:border-r-0 lg:border-b-0">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
             <p className="mt-2 text-2xl font-bold text-white">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-3 sm:p-4">
+      <div className="sunat-table-shell rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-3 sm:p-4">
         <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1.2fr)_repeat(4,minmax(150px,1fr))]">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -353,16 +352,16 @@ export const SunatDueDatesSection = () => {
           </select>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[#1e253c] scrollbar-hide">
-          <table className="min-w-[1180px] w-full border-collapse text-left text-sm">
-            <thead className="bg-[#121827] text-xs uppercase tracking-wide text-slate-500">
+        <div className="sunat-table-wrap overflow-x-auto rounded-xl border border-[#1e253c] scrollbar-hide">
+          <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
+            <thead className="sunat-table-header bg-[#121827] text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 {['Cliente', 'RUC', 'Últ. Dígito', 'Condición', 'Fecha Máxima', 'Días Restantes', 'Estado', 'Progreso', 'Responsable', 'Acciones'].map((header) => (
                   <th key={header} className="border-b border-[#1e253c] px-4 py-3 font-semibold">{header}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1e253c]">
+            <tbody className="sunat-table-body divide-y divide-[#1e253c]">
               {isLoading && (
                 <tr>
                   <td colSpan={10} className="px-4 py-8 text-center text-slate-400">Cargando vencimientos...</td>
@@ -374,30 +373,25 @@ export const SunatDueDatesSection = () => {
                 </tr>
               )}
               {!isLoading && filteredRecords.map((record) => (
-                <tr key={record.id} className="bg-[#0e121e]/30 transition-colors hover:bg-[#1e253c]/35">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#506ff0] to-[#8b5cf6] text-xs font-bold text-white">
-                        {getInitial(record.task.title)}
-                      </div>
-                      <span className="font-semibold text-white">{record.task.title}</span>
-                    </div>
+                <tr key={record.id} className="sunat-table-row bg-[#0e121e]/30 transition-colors hover:bg-[#1e253c]/35">
+                  <td className="px-4 py-5">
+                    <span className="font-semibold text-white">{record.task.title}</span>
                   </td>
-                  <td className="px-4 py-4 font-mono text-slate-200">{record.ruc}</td>
-                  <td className="px-4 py-4">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#506ff0]/35 bg-[#506ff0]/10 px-2 text-xs font-bold text-[#8ba0ff]">
+                  <td className="px-4 py-5 font-mono text-slate-200">{record.ruc}</td>
+                  <td className="px-4 py-5">
+                    <span className="sunat-last-digit-badge inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#506ff0]/35 bg-[#506ff0]/10 px-2 text-xs font-bold text-[#8ba0ff]">
                       {record.lastDigit}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-300">{getConditionLabel(record.condition)}</td>
-                  <td className="px-4 py-4 font-semibold text-white">{formatSunatDate(record.dueDate)}</td>
+                  <td className="px-4 py-5 text-slate-300">{getConditionLabel(record.condition)}</td>
+                  <td className="px-4 py-5 font-semibold text-white">{formatSunatDate(record.dueDate)}</td>
                   <td className="px-4 py-4 text-slate-300">{record.daysRemaining} días</td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-5">
                     <span className={clsx("inline-flex rounded-full border px-2.5 py-1 text-xs font-bold", getStatusClasses(record.status))}>
                       {record.status}
                     </span>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-5">
                     <div className="flex min-w-[140px] items-center gap-3">
                       <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#1e253c]">
                         <div className="h-full rounded-full bg-[#506ff0]" style={{ width: `${record.progress}%` }} />
@@ -405,15 +399,10 @@ export const SunatDueDatesSection = () => {
                       <span className="w-9 text-right text-xs font-semibold text-slate-200">{record.progress}%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className={clsx("flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-bold text-white", record.task.assignee.colorClass)}>
-                        {record.task.assignee.initials}
-                      </div>
-                      <span className="text-slate-300">{record.task.assignee.name}</span>
-                    </div>
+                  <td className="px-4 py-5">
+                    <span className="text-slate-300">{record.task.assignee.name}</span>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-5">
                     <div className="flex items-center gap-2">
                       <button type="button" onClick={() => showDetail(record.task_id)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white" title="Ver detalle">
                         <Eye size={15} />

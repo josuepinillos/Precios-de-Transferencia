@@ -442,6 +442,94 @@ html[data-theme="light"] .historical-results-section .historical-results-empty-r
   color: #64748b !important;
 }
 
+html[data-theme="light"] .sunat-due-dates-section {
+  color: #0f172a;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-header-icon,
+html[data-theme="light"] .sunat-due-dates-section .sunat-kpi-strip,
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-shell,
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-wrap {
+  background-color: #ffffff !important;
+  border-color: #d7e0ee !important;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-kpi-cell {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-secondary-button {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-secondary-button:hover {
+  background-color: #f8fbff !important;
+  border-color: #93a4f8 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section input,
+html[data-theme="light"] .sunat-due-dates-section select {
+  background-color: #ffffff !important;
+  border-color: #d7e0ee !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+html[data-theme="light"] .sunat-due-dates-section input:focus,
+html[data-theme="light"] .sunat-due-dates-section select:focus {
+  border-color: #7c8cf8 !important;
+  box-shadow: 0 0 0 3px rgba(80, 111, 240, 0.12);
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-header {
+  background-color: #f8fbff !important;
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-header th,
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-body,
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-row,
+html[data-theme="light"] .sunat-due-dates-section td,
+html[data-theme="light"] .sunat-due-dates-section th {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-row {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-table-row:hover {
+  background-color: #f8fbff !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-last-digit-badge {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #3730a3 !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-status-ready {
+  background-color: #dcfce7 !important;
+  border-color: #86efac !important;
+  color: #166534 !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-status-warning {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+html[data-theme="light"] .sunat-due-dates-section .sunat-status-overdue {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
 .text-gradient {
   background: linear-gradient(to right, #60a5fa, #a78bfa);
   -webkit-background-clip: text;
