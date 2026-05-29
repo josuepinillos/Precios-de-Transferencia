@@ -30,7 +30,7 @@ interface DashboardState {
   isLoaded: boolean;
   error: string | null;
   selectedTaskId: string | null;
-  currentView: 'dashboard' | 'timeline' | 'calendar' | 'tasks' | 'sunat';
+  currentView: 'dashboard' | 'timeline' | 'calendar' | 'sunat';
   currentDate: string;
   filters: {
     assignee: string;
@@ -44,7 +44,7 @@ interface DashboardState {
   reloadTasks: () => Promise<void>;
   clearError: () => void;
   selectTask: (id: string | null) => void;
-  setCurrentView: (view: 'dashboard' | 'timeline' | 'calendar' | 'tasks' | 'sunat') => void;
+  setCurrentView: (view: 'dashboard' | 'timeline' | 'calendar' | 'sunat') => void;
   setCurrentDate: (date: string) => void;
   setFilters: (filters: Partial<DashboardState['filters']>) => void;
 
