@@ -260,6 +260,39 @@ export type Database = {
           },
         ];
       };
+      sunat_due_dates: {
+        Row: {
+          id: string;
+          task_id: string;
+          ruc: string;
+          condition: 'general' | 'good_taxpayer';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          task_id: string;
+          ruc: string;
+          condition?: 'general' | 'good_taxpayer';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          task_id?: string;
+          ruc?: string;
+          condition?: 'general' | 'good_taxpayer';
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'sunat_due_dates_task_id_fkey';
+            columns: ['task_id'];
+            isOneToOne: true;
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

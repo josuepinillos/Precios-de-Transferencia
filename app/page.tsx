@@ -7,6 +7,8 @@ import { TimelineMain } from '@/components/TimelineMain';
 import { CalendarMain } from '@/components/CalendarMain';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { DashboardExecutive } from '@/components/DashboardExecutive';
+import { TasksMain } from '@/components/TasksMain';
+import { SunatDueDatesSection } from '@/components/SunatDueDatesSection';
 
 export default function Home() {
   const { currentView, initRealtime, isLoaded, error, clearError } = useDashboardStore();
@@ -51,6 +53,8 @@ export default function Home() {
 
             {currentView === 'timeline' && <TimelineMain />}
             {currentView === 'calendar' && <CalendarMain />}
+            {currentView === 'tasks' && <TasksMain />}
+            {currentView === 'sunat' && <SunatDueDatesSection />}
           </div>
         </main>
       </div>

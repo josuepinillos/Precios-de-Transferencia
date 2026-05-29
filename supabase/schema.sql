@@ -76,6 +76,16 @@ create table if not exists public.historical_results (
   unique (task_id, method, year)
 );
 
+create table if not exists public.sunat_due_dates (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  ruc text not null check (ruc ~ '^[0-9]{11}$'),
+  condition text not null default 'general' check (condition in ('general', 'good_taxpayer')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (task_id)
+);
+
 create index if not exists client_emails_task_id_idx
 on public.client_emails(task_id);
 
@@ -93,6 +103,12 @@ on public.historical_results(task_id, method);
 
 create index if not exists historical_results_task_method_exercise_idx
 on public.historical_results(task_id, method_name, exercise_year);
+
+create index if not exists sunat_due_dates_task_id_idx
+on public.sunat_due_dates(task_id);
+
+create index if not exists sunat_due_dates_ruc_idx
+on public.sunat_due_dates(ruc);
 
 alter table if exists public.subtasks
 add column if not exists assignee jsonb,
@@ -177,17 +193,25 @@ before update on public.historical_results
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists set_sunat_due_dates_updated_at on public.sunat_due_dates;
+create trigger set_sunat_due_dates_updated_at
+before update on public.sunat_due_dates
+for each row
+execute function public.set_updated_at();
+
 alter table public.tasks enable row level security;
 alter table public.subtasks enable row level security;
 alter table public.client_emails enable row level security;
 alter table public.controlled_operations enable row level security;
 alter table public.historical_results enable row level security;
+alter table public.sunat_due_dates enable row level security;
 
 alter table public.tasks replica identity full;
 alter table public.subtasks replica identity full;
 alter table public.client_emails replica identity full;
 alter table public.controlled_operations replica identity full;
 alter table public.historical_results replica identity full;
+alter table public.sunat_due_dates replica identity full;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on table public.tasks to anon, authenticated;
@@ -195,6 +219,7 @@ grant select, insert, update, delete on table public.subtasks to anon, authentic
 grant select, insert, update, delete on table public.client_emails to anon, authenticated;
 grant select, insert, update, delete on table public.controlled_operations to anon, authenticated;
 grant select, insert, update, delete on table public.historical_results to anon, authenticated;
+grant select, insert, update on table public.sunat_due_dates to anon, authenticated;
 
 drop policy if exists "Allow public task reads" on public.tasks;
 create policy "Allow public task reads"
@@ -321,6 +346,25 @@ on public.historical_results for delete
 to anon, authenticated
 using (true);
 
+drop policy if exists "Allow public sunat due date reads" on public.sunat_due_dates;
+create policy "Allow public sunat due date reads"
+on public.sunat_due_dates for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Allow public sunat due date inserts" on public.sunat_due_dates;
+create policy "Allow public sunat due date inserts"
+on public.sunat_due_dates for insert
+to anon, authenticated
+with check (true);
+
+drop policy if exists "Allow public sunat due date updates" on public.sunat_due_dates;
+create policy "Allow public sunat due date updates"
+on public.sunat_due_dates for update
+to anon, authenticated
+using (true)
+with check (true);
+
 do $$
 begin
   if not exists (
@@ -371,6 +415,16 @@ begin
       and tablename = 'historical_results'
   ) then
     alter publication supabase_realtime add table public.historical_results;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'sunat_due_dates'
+  ) then
+    alter publication supabase_realtime add table public.sunat_due_dates;
   end if;
 end;
 $$;

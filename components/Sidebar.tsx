@@ -5,6 +5,8 @@ import {
   LayoutDashboard, 
   ListTree, 
   Calendar, 
+  CalendarClock,
+  ClipboardList,
   Moon,
   Sun,
   Menu,
@@ -12,12 +14,14 @@ import {
 } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 
-type ViewId = 'dashboard' | 'timeline' | 'calendar';
+type ViewId = 'dashboard' | 'timeline' | 'calendar' | 'tasks' | 'sunat';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard' },
   { icon: ListTree, label: 'Timeline', id: 'timeline' },
   { icon: Calendar, label: 'Calendario', id: 'calendar' },
+  { icon: ClipboardList, label: 'Tareas y Subtareas', id: 'tasks' },
+  { icon: CalendarClock, label: 'Vencimientos SUNAT', id: 'sunat' },
 ] satisfies Array<{
   icon: typeof LayoutDashboard;
   label: string;
