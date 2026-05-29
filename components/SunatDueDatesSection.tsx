@@ -11,6 +11,7 @@ type SunatDueDateRow = Database['public']['Tables']['sunat_due_dates']['Row'];
 type SunatCondition = SunatDueDateRow['condition'];
 type SunatStatus = 'VENCIDO' | 'ATENCION' | 'A TIEMPO';
 type RangeFilter = 'all' | 'overdue' | 'le7' | 'le15' | 'gt15';
+type DueDateSort = 'asc' | 'desc';
 
 type SunatSchedule = {
   exercise: number;
@@ -121,6 +122,7 @@ export const SunatDueDatesSection = () => {
   const [assigneeFilter, setAssigneeFilter] = React.useState('all');
   const [conditionFilter, setConditionFilter] = React.useState<'all' | SunatCondition>('all');
   const [rangeFilter, setRangeFilter] = React.useState<RangeFilter>('all');
+  const [dueDateSort, setDueDateSort] = React.useState<DueDateSort>('asc');
   const referenceRef = React.useRef<HTMLDivElement>(null);
 
   const loadRows = React.useCallback(async () => {
@@ -167,24 +169,29 @@ export const SunatDueDatesSection = () => {
 
   const filteredRecords = React.useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
-    return records.filter((record) => {
-      const matchesSearch =
-        !normalizedSearch ||
-        record.task.title.toLowerCase().includes(normalizedSearch) ||
-        record.ruc.includes(normalizedSearch);
-      const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-      const matchesAssignee = assigneeFilter === 'all' || record.task.assignee.name === assigneeFilter;
-      const matchesCondition = conditionFilter === 'all' || record.condition === conditionFilter;
-      const matchesRange =
-        rangeFilter === 'all' ||
-        (rangeFilter === 'overdue' && record.daysRemaining < 0) ||
-        (rangeFilter === 'le7' && record.daysRemaining >= 0 && record.daysRemaining <= 7) ||
-        (rangeFilter === 'le15' && record.daysRemaining >= 0 && record.daysRemaining <= 15) ||
-        (rangeFilter === 'gt15' && record.daysRemaining > 15);
+    return records
+      .filter((record) => {
+        const matchesSearch =
+          !normalizedSearch ||
+          record.task.title.toLowerCase().includes(normalizedSearch) ||
+          record.ruc.includes(normalizedSearch);
+        const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
+        const matchesAssignee = assigneeFilter === 'all' || record.task.assignee.name === assigneeFilter;
+        const matchesCondition = conditionFilter === 'all' || record.condition === conditionFilter;
+        const matchesRange =
+          rangeFilter === 'all' ||
+          (rangeFilter === 'overdue' && record.daysRemaining < 0) ||
+          (rangeFilter === 'le7' && record.daysRemaining >= 0 && record.daysRemaining <= 7) ||
+          (rangeFilter === 'le15' && record.daysRemaining >= 0 && record.daysRemaining <= 15) ||
+          (rangeFilter === 'gt15' && record.daysRemaining > 15);
 
-      return matchesSearch && matchesStatus && matchesAssignee && matchesCondition && matchesRange;
-    });
-  }, [assigneeFilter, conditionFilter, rangeFilter, records, search, statusFilter]);
+        return matchesSearch && matchesStatus && matchesAssignee && matchesCondition && matchesRange;
+      })
+      .sort((left, right) => {
+        const difference = parseLocalDate(left.dueDate).getTime() - parseLocalDate(right.dueDate).getTime();
+        return dueDateSort === 'asc' ? difference : -difference;
+      });
+  }, [assigneeFilter, conditionFilter, dueDateSort, rangeFilter, records, search, statusFilter]);
 
   const kpis = React.useMemo(() => {
     return {
@@ -312,7 +319,7 @@ export const SunatDueDatesSection = () => {
       </div>
 
       <div className="sunat-table-shell rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-3 sm:p-4">
-        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1.2fr)_repeat(4,minmax(150px,1fr))]">
+        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1.2fr)_repeat(5,minmax(150px,1fr))]">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
@@ -349,6 +356,10 @@ export const SunatDueDatesSection = () => {
             <option value="le7">≤ 7 días</option>
             <option value="le15">≤ 15 días</option>
             <option value="gt15">Más de 15 días</option>
+          </select>
+          <select value={dueDateSort} onChange={(event) => setDueDateSort(event.target.value as DueDateSort)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+            <option value="asc">↑ Fecha mÃ¡xima</option>
+            <option value="desc">↓ Fecha mÃ¡xima</option>
           </select>
         </div>
 
