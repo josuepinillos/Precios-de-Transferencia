@@ -1,14 +1,30 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarGrid } from './CalendarGrid';
 import { CalendarPanel } from './CalendarPanel';
 import { ChevronLeft, ChevronRight, Filter, ChevronDown } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
+import { addMonths, formatMonthLabel, getDateKeyInMonth, getTodayDateKey, parseDateKey, startOfMonth } from '../lib/date';
 
 export const CalendarMain = () => {
-  const { filters, setFilters } = useDashboardStore();
+  const { filters, setFilters, currentDate, setCurrentDate } = useDashboardStore();
+  const [displayedMonth, setDisplayedMonth] = useState(() => startOfMonth(parseDateKey(currentDate) ?? new Date()));
+
+  const selectDate = (dateKey: string) => {
+    const date = parseDateKey(dateKey);
+    if (!date) return;
+    setCurrentDate(dateKey);
+    setDisplayedMonth(startOfMonth(date));
+  };
+
+  const navigateMonth = (amount: number) => {
+    const nextMonth = addMonths(displayedMonth, amount);
+    const selectedDay = parseDateKey(currentDate)?.getDate() ?? 1;
+    setDisplayedMonth(nextMonth);
+    setCurrentDate(getDateKeyInMonth(nextMonth, selectedDay));
+  };
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
@@ -17,21 +33,21 @@ export const CalendarMain = () => {
       
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <button className="px-4 py-2.5 sm:py-2 rounded-lg bg-[#1e253c] text-white text-sm font-medium hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
+          <button onClick={() => selectDate(getTodayDateKey())} className="px-4 py-2.5 sm:py-2 rounded-lg bg-[#1e253c] text-white text-sm font-medium hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
             Hoy
           </button>
           
           <div className="flex items-center gap-1">
-            <button className="p-2.5 sm:p-2 rounded-lg bg-[#1e253c] text-white hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
+            <button onClick={() => navigateMonth(-1)} aria-label="Mes anterior" className="p-2.5 sm:p-2 rounded-lg bg-[#1e253c] text-white hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
               <ChevronLeft size={16} />
             </button>
-            <button className="p-2.5 sm:p-2 rounded-lg bg-[#1e253c] text-white hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
+            <button onClick={() => navigateMonth(1)} aria-label="Mes siguiente" className="p-2.5 sm:p-2 rounded-lg bg-[#1e253c] text-white hover:bg-[#2a334e] transition-colors border border-[#2a334e]">
               <ChevronRight size={16} />
             </button>
           </div>
 
           <div className="flex items-center gap-2 px-2">
-            <span className="text-base sm:text-lg font-bold">Mayo 2026</span>
+            <span className="text-base sm:text-lg font-bold capitalize">{formatMonthLabel(displayedMonth)}</span>
             <ChevronDown size={16} className="text-slate-400" />
           </div>
         </div>
@@ -63,7 +79,7 @@ export const CalendarMain = () => {
       {/* Main Content */}
       <div className="flex flex-col xl:flex-row gap-4 lg:gap-6 xl:h-[700px]">
         <div className="min-w-0 flex-1 overflow-hidden">
-          <CalendarGrid />
+          <CalendarGrid displayedMonth={displayedMonth} onSelectDate={selectDate} />
         </div>
         <CalendarPanel />
       </div>

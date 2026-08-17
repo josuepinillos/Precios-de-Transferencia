@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { USERS } from '../data/mockData';
-import { DatePicker2026 } from './DatePicker2026';
+import { getTodayDateKey } from '../lib/date';
 
 type Priority = 'Alta' | 'Media' | 'Baja';
 
@@ -15,15 +15,13 @@ interface NewTaskModalProps {
 }
 
 const MOCK_USERS = Object.values(USERS);
-const DEFAULT_TASK_DATE = '2026-05-16';
-
 export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
   const addTask = useDashboardStore((state) => state.addTask);
   const storeError = useDashboardStore((state) => state.error);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [dateBlock, setDateBlock] = useState(DEFAULT_TASK_DATE);
+  const [dateBlock, setDateBlock] = useState(getTodayDateKey);
   const [assigneeIdx, setAssigneeIdx] = useState(0);
   const [prioridad, setPrioridad] = useState<Priority | ''>('');
   const [isSaving, setIsSaving] = useState(false);
@@ -49,7 +47,7 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
       setTitle('');
       setDescription('');
-      setDateBlock(DEFAULT_TASK_DATE);
+      setDateBlock(getTodayDateKey());
       setAssigneeIdx(0);
       setPrioridad('');
       onClose();
@@ -120,7 +118,13 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
-                    <DatePicker2026 value={dateBlock} onChange={setDateBlock} label="Día asignado" />
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Día asignado</label>
+                    <input
+                      type="date"
+                      value={dateBlock}
+                      onChange={(event) => setDateBlock(event.target.value)}
+                      className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors"
+                    />
                   </div>
 
                   <div className="flex-1">

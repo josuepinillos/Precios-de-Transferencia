@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { TIMELINE_DAYS } from '../data/mockData';
 import { Folder } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
@@ -12,12 +11,10 @@ type TimelineDay = {
   label: string;
 };
 
-const TIMELINE_YEAR_START = '2026-01-01';
-const TIMELINE_YEAR_END = '2026-12-31';
 const MONTH_LABELS = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
 const isValidTimelineDate = (value: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= TIMELINE_YEAR_START && value <= TIMELINE_YEAR_END;
+  /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 const parseDateBlock = (value: string) => {
   const [year, month, day] = value.split('-').map(Number);
@@ -38,7 +35,7 @@ const toDateBlock = (date: Date) => {
 
 const buildTimelineDays = (dateBlocks: string[]): TimelineDay[] => {
   const validDateBlocks = [...new Set(dateBlocks.filter(isValidTimelineDate))].sort();
-  if (validDateBlocks.length === 0) return TIMELINE_DAYS;
+  if (validDateBlocks.length === 0) return [];
 
   const days: TimelineDay[] = [];
   const cursor = parseDateBlock(validDateBlocks[0]);
@@ -58,10 +55,7 @@ export const Timeline = () => {
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropTargetDate, setDropTargetDate] = useState<string | null>(null);
   const filteredTasks = getFilteredTasks();
-  const timelineDays = React.useMemo(
-    () => buildTimelineDays(tasks.map((task) => task.dateBlock)),
-    [tasks],
-  );
+  const timelineDays = buildTimelineDays(filteredTasks.map((task) => task.dateBlock));
 
   const getProgressColor = (progress: number) => {
     if (progress <= 30) return 'bg-[#ef4444]'; // Red

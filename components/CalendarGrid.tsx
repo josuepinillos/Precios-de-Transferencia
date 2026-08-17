@@ -4,41 +4,29 @@ import React, { useState } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
+import { getCalendarDays, getTodayDateKey, isBeforeDateKey } from '../lib/date';
 
 const DAYS_OF_WEEK = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
-// Generate days for the grid (May 10 to June 6, 2026 to match mockup)
-const generateDays = () => {
-  const days = [];
-  const d = new Date(2026, 4, 10); // May 10, 2026
-  for (let i = 0; i < 28; i++) {
-    days.push({
-      date: new Date(d),
-      dateString: d.toISOString().split('T')[0],
-      day: d.getDate(),
-      month: d.toLocaleString('es-ES', { month: 'short' }).toUpperCase(),
-      isCurrentMonth: d.getMonth() === 4 // May
-    });
-    d.setDate(d.getDate() + 1);
-  }
-  return days;
-};
+interface CalendarGridProps {
+  displayedMonth: Date;
+  onSelectDate: (dateKey: string) => void;
+}
 
-const CALENDAR_DAYS = generateDays();
-
-export const CalendarGrid = () => {
-  const { tasks, getFilteredTasks, getTaskProgress, currentDate, setCurrentDate, updateTask } = useDashboardStore();
+export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps) => {
+  const { tasks, getFilteredTasks, getTaskProgress, currentDate, updateTask } = useDashboardStore();
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropTargetDate, setDropTargetDate] = useState<string | null>(null);
   const filteredTasks = getFilteredTasks();
+  const calendarDays = getCalendarDays(displayedMonth);
+  const todayDateKey = getTodayDateKey();
 
-  const getTaskStatusColor = (taskId: string, dueDate: string) => {
+  const getTaskStatusColor = (taskId: string, dateBlock: string) => {
     const progress = getTaskProgress(taskId);
     if (progress === 100) return 'bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]'; // Green
     if (progress > 0) return 'bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.5)]'; // Yellow
     
-    // Simplistic overdue check
-    if (new Date(dueDate) < new Date('2026-05-16')) return 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)]'; // Red
+    if (isBeforeDateKey(dateBlock, todayDateKey)) return 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)]'; // Red
     
     return 'bg-[#8b5cf6] shadow-[0_0_8px_rgba(139,92,246,0.5)]'; // Purple
   };
@@ -93,21 +81,21 @@ export const CalendarGrid = () => {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 grid grid-cols-7 grid-rows-4 gap-1.5 sm:gap-2 lg:gap-3">
-        {CALENDAR_DAYS.map((dayInfo, i) => {
-          const dayTasks = getTasksForDate(dayInfo.dateString);
-          const isSelected = currentDate === dayInfo.dateString;
-          const isToday = dayInfo.dateString === '2026-05-16'; // Assuming 16 May is "Today" in mockup
-          const isDropTarget = dropTargetDate === dayInfo.dateString;
+      <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1.5 sm:gap-2 lg:gap-3">
+        {calendarDays.map((dayInfo) => {
+          const dayTasks = getTasksForDate(dayInfo.dateKey);
+          const isSelected = currentDate === dayInfo.dateKey;
+          const isToday = dayInfo.dateKey === todayDateKey;
+          const isDropTarget = dropTargetDate === dayInfo.dateKey;
 
           return (
             <motion.div 
-              key={i}
+              key={dayInfo.dateKey}
               whileHover={{ scale: 1.02 }}
               onDragOver={(event) => {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'move';
-                setDropTargetDate(dayInfo.dateString);
+                setDropTargetDate(dayInfo.dateKey);
               }}
               onDragLeave={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -115,9 +103,9 @@ export const CalendarGrid = () => {
                 }
               }}
               onDrop={(event) => {
-                void handleDrop(event, dayInfo.dateString);
+                void handleDrop(event, dayInfo.dateKey);
               }}
-              onClick={() => setCurrentDate(dayInfo.dateString)}
+              onClick={() => onSelectDate(dayInfo.dateKey)}
               className={clsx(
                 `
                 relative rounded-lg sm:rounded-xl p-1.5 sm:p-2 lg:p-3 min-h-[88px] sm:min-h-[104px] flex flex-col cursor-pointer transition-colors
@@ -156,7 +144,7 @@ export const CalendarGrid = () => {
                         draggable
                         onClick={(event) => {
                           event.stopPropagation();
-                          setCurrentDate(dayInfo.dateString);
+                          onSelectDate(dayInfo.dateKey);
                         }}
                         onDragStart={(event) => handleDragStart(event, task.id)}
                         onDragEnd={() => {
@@ -169,7 +157,7 @@ export const CalendarGrid = () => {
                         )}
                         title={task.title}
                       >
-                        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTaskStatusColor(task.id, task.dueDate)}`} />
+                        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTaskStatusColor(task.id, task.dateBlock)}`} />
                         <span className="hidden min-w-0 truncate sm:block">{task.title}</span>
                       </button>
                     ))}
