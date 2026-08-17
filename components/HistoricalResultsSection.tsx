@@ -410,9 +410,9 @@ const TechnicalResultTable = ({ result }: { result: HistoricalResultLike }) => {
   const technicalTable = getTechnicalTable(result);
 
   return (
-    <div className="historical-results-table overflow-hidden rounded-xl border border-[#1e253c] bg-[#0e121e]/45">
-      <div className="historical-results-table-title border-b border-[#1e253c] bg-[#121827]/80 px-4 py-3">
-        <h5 className="text-sm font-bold uppercase tracking-wide text-white">
+    <div className="historical-results-table overflow-hidden rounded-xl border border-line bg-surface">
+      <div className="historical-results-table-title border-b border-line bg-surface-muted px-4 py-3">
+        <h5 className="text-sm font-bold uppercase tracking-wide text-ink">
           {method} {exerciseYear}
         </h5>
       </div>
@@ -420,47 +420,47 @@ const TechnicalResultTable = ({ result }: { result: HistoricalResultLike }) => {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-left text-xs">
           <thead>
-            <tr className="historical-results-table-header bg-[#151a2b] text-[11px] uppercase tracking-wide text-slate-200">
-              <th className="border border-[#1e253c] px-4 py-3 font-bold">Rango de empresas comparables</th>
+            <tr className="historical-results-table-header bg-surface text-[11px] uppercase tracking-wide text-ink">
+              <th className="border border-line px-4 py-3 font-bold">Rango de empresas comparables</th>
               {technicalTable.years.map((year) => (
-                <th key={year} className="border border-[#1e253c] px-4 py-3 text-right font-bold">
+                <th key={year} className="border border-line px-4 py-3 text-right font-bold">
                   {year}
                 </th>
               ))}
-              <th className="border border-[#1e253c] px-4 py-3 text-right font-bold">Promedio</th>
+              <th className="border border-line px-4 py-3 text-right font-bold">Promedio</th>
             </tr>
           </thead>
           <tbody>
             {METRIC_LABELS.map(([metric, label]) => (
-              <tr key={metric} className="historical-results-table-row text-slate-200">
-                <td className="border border-[#1e253c] px-4 py-3 font-medium">{label}</td>
+              <tr key={metric} className="historical-results-table-row text-ink">
+                <td className="border border-line px-4 py-3 font-medium">{label}</td>
                 {technicalTable.years.map((year) => (
-                  <td key={year} className="border border-[#1e253c] px-4 py-3 text-right tabular-nums">
+                  <td key={year} className="border border-line px-4 py-3 text-right tabular-nums">
                     {formatNumber(technicalTable.comparable[metric][String(year)])}
                   </td>
                 ))}
-                <td className="border border-[#1e253c] px-4 py-3 text-right font-semibold tabular-nums">
+                <td className="border border-line px-4 py-3 text-right font-semibold tabular-nums">
                   {formatNumber(technicalTable.comparableAverage[metric])}
                 </td>
               </tr>
             ))}
-            <tr className="historical-results-table-header bg-[#151a2b] text-[11px] uppercase tracking-wide text-slate-200">
-              <th className="border border-[#1e253c] px-4 py-3 font-bold">Parte analizada</th>
+            <tr className="historical-results-table-header bg-surface text-[11px] uppercase tracking-wide text-ink">
+              <th className="border border-line px-4 py-3 font-bold">Parte analizada</th>
               {technicalTable.years.map((year) => (
-                <th key={year} className="border border-[#1e253c] px-4 py-3 text-right font-bold">
+                <th key={year} className="border border-line px-4 py-3 text-right font-bold">
                   {year}
                 </th>
               ))}
-              <th className="border border-[#1e253c] px-4 py-3 text-right font-bold">Promedio</th>
+              <th className="border border-line px-4 py-3 text-right font-bold">Promedio</th>
             </tr>
-            <tr className="historical-results-table-row text-white">
-              <td className="border border-[#1e253c] px-4 py-3 font-semibold">{technicalTable.company.label}</td>
+            <tr className="historical-results-table-row text-ink">
+              <td className="border border-line px-4 py-3 font-semibold">{technicalTable.company.label}</td>
               {technicalTable.years.map((year) => (
-                <td key={year} className="border border-[#1e253c] px-4 py-3 text-right font-semibold tabular-nums">
+                <td key={year} className="border border-line px-4 py-3 text-right font-semibold tabular-nums">
                   {formatNumber(technicalTable.company.values[String(year)])}
                 </td>
               ))}
-              <td className="border border-[#1e253c] px-4 py-3 text-right font-bold tabular-nums">
+              <td className="border border-line px-4 py-3 text-right font-bold tabular-nums">
                 {formatNumber(technicalTable.company.average)}
               </td>
             </tr>
@@ -606,7 +606,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
   const displayedByYear = previewResults.length > 0 ? previewByYear : resultsByYear;
 
   return (
-    <section className="historical-results-section mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
+    <section className="historical-results-section mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
       <input
         ref={fileInputRef}
         type="file"
@@ -617,17 +617,17 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
         className="hidden"
       />
 
-      <div className="historical-results-header flex flex-col gap-4 border-b border-[#1e253c] bg-[#121827]/70 px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="historical-results-header flex flex-col gap-4 border-b border-line bg-surface-muted px-4 py-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">Historial de resultados</h3>
-          <p className="mt-1 text-xs text-slate-400">Cuadros tecnicos por ejercicio fiscal y metodo de rentabilidad.</p>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-ink">Historial de resultados</h3>
+          <p className="mt-1 text-xs text-ink-soft">Cuadros tecnicos por ejercicio fiscal y metodo de rentabilidad.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={exportResults}
             disabled={results.length === 0}
-            className="historical-results-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="historical-results-secondary-button flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-sunken px-3 text-xs font-medium text-ink transition-colors hover:border-accent hover:bg-accent-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={14} />
             Exportar Excel
@@ -636,7 +636,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isParsing || isSaving}
-            className="historical-results-primary-button flex h-10 items-center gap-2 rounded-lg bg-[#506ff0] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60"
+            className="historical-results-primary-button flex h-10 items-center gap-2 rounded-lg bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Upload size={14} />
             {isParsing ? 'Leyendo...' : 'Importar Excel'}
@@ -646,21 +646,21 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
 
       <div className="p-4">
         {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
             <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {previewResults.length > 0 && (
-          <div className="mb-4 rounded-xl border border-[#506ff0]/40 bg-[#506ff0]/10 p-4">
+          <div className="mb-4 rounded-xl border border-accent bg-accent-soft p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <FileSpreadsheet size={16} className="text-[#9fb0ff]" />
+                <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <FileSpreadsheet size={16} className="text-accent" />
                   Preview de importacion
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-ink-soft">
                   {sourceFileName} - {previewResults.length} cuadros detectados. Revisa el preview antes de reemplazar.
                 </p>
               </div>
@@ -672,7 +672,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
                     setSourceFileName('');
                   }}
                   disabled={isSaving}
-                  className="historical-results-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:bg-[#1e253c]"
+                  className="historical-results-secondary-button flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-sunken px-3 text-xs font-medium text-ink transition-colors hover:bg-surface-sunken"
                 >
                   <X size={14} />
                   Cancelar
@@ -683,7 +683,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
                     void savePreview();
                   }}
                   disabled={isSaving}
-                  className="flex h-10 items-center gap-2 rounded-lg bg-[#10b981] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#34d399] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-10 items-center gap-2 rounded-lg bg-positive px-3 text-xs font-semibold text-white transition-colors hover:bg-positive disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Check size={14} />
                   {isSaving ? 'Guardando...' : 'Reemplazar y guardar'}
@@ -700,17 +700,17 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
               const isExpanded = expandedYears.includes(year);
 
               return (
-                <article key={year} className="historical-results-accordion overflow-hidden rounded-xl border border-[#1e253c] bg-[#0e121e]/45">
+                <article key={year} className="historical-results-accordion overflow-hidden rounded-xl border border-line bg-surface">
                   <button
                     type="button"
                     onClick={() => toggleYear(year)}
-                    className="historical-results-accordion-trigger flex w-full items-center justify-between gap-4 bg-[#121827]/80 px-4 py-3 text-left transition-colors hover:bg-[#1e253c]/50"
+                    className="historical-results-accordion-trigger flex w-full items-center justify-between gap-4 bg-surface-muted px-4 py-3 text-left transition-colors hover:bg-surface-sunken"
                   >
                     <div className="flex items-center gap-3">
-                      <ChevronDown size={16} className={clsx('text-[#9fb0ff] transition-transform', isExpanded && 'rotate-180')} />
-                      <span className="text-base font-bold text-white">{year}</span>
+                      <ChevronDown size={16} className={clsx('text-accent transition-transform', isExpanded && 'rotate-180')} />
+                      <span className="text-base font-bold text-ink">{year}</span>
                     </div>
-                    <span className="historical-results-count-badge rounded-full border border-[#2a334e] bg-[#1e253c]/60 px-3 py-1 text-[11px] font-semibold text-slate-300">
+                    <span className="historical-results-count-badge rounded-full border border-line bg-surface-sunken px-3 py-1 text-[11px] font-semibold text-ink-soft">
                       {yearResults.length} metodos
                     </span>
                   </button>
@@ -718,7 +718,7 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
                   {isExpanded && (
                     <div className="space-y-4 p-4">
                       {yearResults.length === 0 ? (
-                        <p className="historical-results-empty-row rounded-lg border border-dashed border-[#2a334e] px-3 py-6 text-center text-xs text-slate-500">Sin datos para este ejercicio.</p>
+                        <p className="historical-results-empty-row rounded-lg border border-dashed border-line px-3 py-6 text-center text-xs text-ink-faint">Sin datos para este ejercicio.</p>
                       ) : (
                         yearResults.map((result, index) => (
                           <TechnicalResultTable
@@ -734,10 +734,10 @@ export const HistoricalResultsSection = ({ task }: HistoricalResultsSectionProps
             })}
           </div>
         ) : (
-          <div className="historical-results-empty rounded-xl border border-dashed border-[#2a334e] bg-[#121827]/40 px-4 py-8 text-center">
-            <FileSpreadsheet size={26} className="mx-auto text-slate-500" />
-            <p className="mt-3 text-sm font-semibold text-white">Aun no hay historial de resultados</p>
-            <p className="mt-1 text-xs text-slate-500">Importa un unico Excel con bloques ROS, CAN, ROA, PCNC u otros metodos.</p>
+          <div className="historical-results-empty rounded-xl border border-dashed border-line bg-surface-muted px-4 py-8 text-center">
+            <FileSpreadsheet size={26} className="mx-auto text-ink-faint" />
+            <p className="mt-3 text-sm font-semibold text-ink">Aun no hay historial de resultados</p>
+            <p className="mt-1 text-xs text-ink-faint">Importa un unico Excel con bloques ROS, CAN, ROA, PCNC u otros metodos.</p>
           </div>
         )}
 

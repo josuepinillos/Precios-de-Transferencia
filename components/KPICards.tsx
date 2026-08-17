@@ -2,20 +2,26 @@
 
 import React from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { 
-  FileText, 
-  CheckCircle2, 
-  Clock, 
-  ListTree, 
-  ListChecks, 
-  CalendarX2 
+import {
+  FileText,
+  CheckCircle2,
+  Clock,
+  ListTree,
+  ListChecks,
+  CalendarX2,
+  TrendingUp
 } from 'lucide-react';
+import { StatTile } from './ui/StatTile';
+import { ProgressRing } from './ui/Progress';
+import type { Tone } from './ui/Badge';
+
+const share = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
 
 export const KPICards = () => {
-  const { 
-    getTotalTasksCount, 
-    getCompletedTasksCount, 
-    getPendingTasksCount, 
+  const {
+    getTotalTasksCount,
+    getCompletedTasksCount,
+    getPendingTasksCount,
     getOverallProgress,
     getTotalSubtasksCount,
     getCompletedSubtasksCount,
@@ -30,93 +36,78 @@ export const KPICards = () => {
   const completedSubtasks = getCompletedSubtasksCount();
   const overdueSubtasks = getOverdueSubtasksCount();
 
-  const cards = [
+  const cards: Array<{
+    title: string;
+    value: React.ReactNode;
+    meta?: string;
+    icon?: React.ReactNode;
+    tone?: Tone;
+    accessory?: React.ReactNode;
+  }> = [
     {
-      title: "Total de Tareas",
+      title: 'Total de tareas',
       value: totalTasks,
-      percent: "100%",
-      icon: <FileText size={20} className="text-[#3b82f6]" />,
-      iconBg: "bg-[#3b82f6]/20",
+      meta: 'Tareas matrices en el plan',
+      icon: <FileText size={16} />,
+      tone: 'accent',
     },
     {
-      title: "Completadas",
+      title: 'Completadas',
       value: completedTasks,
-      percent: `${Math.round((completedTasks/totalTasks)*100 || 0)}%`,
-      icon: <CheckCircle2 size={20} className="text-[#10b981]" />,
-      iconBg: "bg-[#10b981]/20",
+      meta: `${share(completedTasks, totalTasks)}% del total`,
+      icon: <CheckCircle2 size={16} />,
+      tone: 'positive',
     },
     {
-      title: "Pendientes",
+      title: 'Pendientes',
       value: pendingTasks,
-      percent: `${Math.round((pendingTasks/totalTasks)*100 || 0)}%`,
-      icon: <Clock size={20} className="text-[#f59e0b]" />,
-      iconBg: "bg-[#f59e0b]/20",
+      meta: `${share(pendingTasks, totalTasks)}% del total`,
+      icon: <Clock size={16} />,
+      tone: 'caution',
     },
     {
-      title: "Avance General",
+      title: 'Avance general',
       value: `${progress}%`,
-      isCircle: true,
-      circleProgress: progress,
+      meta: 'Promedio de las tareas',
+      icon: <TrendingUp size={16} />,
+      tone: 'positive',
+      accessory: <ProgressRing value={progress} tone="positive" size={48} />,
     },
     {
-      title: "Total Subtareas",
+      title: 'Total subtareas',
       value: totalSubtasks,
-      icon: <ListTree size={20} className="text-[#8b5cf6]" />,
-      iconBg: "bg-[#8b5cf6]/20",
+      meta: 'Actividades registradas',
+      icon: <ListTree size={16} />,
+      tone: 'accent',
     },
     {
-      title: "Subtareas Completadas",
+      title: 'Subtareas completadas',
       value: completedSubtasks,
-      percent: `${Math.round((completedSubtasks/totalSubtasks)*100 || 0)}%`,
-      icon: <ListChecks size={20} className="text-[#10b981]" />,
-      iconBg: "bg-[#10b981]/20",
+      meta: `${share(completedSubtasks, totalSubtasks)}% del total`,
+      icon: <ListChecks size={16} />,
+      tone: 'positive',
     },
     {
-      title: "Vencidas",
+      title: 'Vencidas',
       value: overdueSubtasks,
-      icon: <CalendarX2 size={20} className="text-[#ef4444]" />,
-      iconBg: "bg-[#ef4444]/20",
-    }
+      meta: 'Subtareas fuera de plazo',
+      icon: <CalendarX2 size={16} />,
+      tone: overdueSubtasks > 0 ? 'critical' : 'neutral',
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-3 sm:gap-4 mb-4 sm:mb-6">
-      {cards.map((card, idx) => (
-        <div key={idx} className="glass rounded-2xl p-4 min-h-[112px] flex flex-col justify-between hover:bg-[#1e253c]/80 transition-colors shadow-lg">
-          <div className="flex items-center gap-3 mb-3">
-            {card.icon && (
-              <div className={`w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center ${card.iconBg}`}>
-                {card.icon}
-              </div>
-            )}
-            <span className="text-xs text-slate-400 font-medium leading-tight">{card.title}</span>
-          </div>
-          <div className="flex items-end justify-between">
-            <span className="text-2xl font-bold text-white">{card.value}</span>
-            {card.percent && (
-              <span className="text-xs text-slate-500 font-medium mb-1">{card.percent}</span>
-            )}
-            {card.isCircle && (
-              <div className="relative w-10 h-10">
-                <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#1e253c"
-                    strokeWidth="4"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="4"
-                    strokeDasharray={`${card.circleProgress}, 100`}
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+      {cards.map((card) => (
+        <StatTile
+          key={card.title}
+          label={card.title}
+          value={card.value}
+          meta={card.meta}
+          icon={card.icon}
+          tone={card.tone}
+          accessory={card.accessory}
+        />
       ))}
     </div>
   );

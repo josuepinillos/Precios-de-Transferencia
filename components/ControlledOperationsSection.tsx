@@ -339,7 +339,7 @@ const buildExportRows = (operations: ControlledOperationRow[]) =>
   }));
 
 const OperationStatusBadge = ({ label }: { label: string }) => (
-  <span className="inline-flex rounded-full border border-[#506ff0]/30 bg-[#506ff0]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#9fb0ff]">
+  <span className="inline-flex rounded-full border border-accent bg-accent-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
     {label}
   </span>
 );
@@ -488,7 +488,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
   };
 
   return (
-    <section className="controlled-operations-section mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
+    <section className="controlled-operations-section mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
       <input
         ref={fileInputRef}
         type="file"
@@ -499,10 +499,10 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
         className="hidden"
       />
 
-      <div className="flex flex-col gap-4 border-b border-[#1e253c] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 border-b border-line px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">Operaciones controladas</h3>
-          <p className="mt-1 text-xs text-slate-400">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-ink">Operaciones controladas</h3>
+          <p className="mt-1 text-xs text-ink-soft">
             Importacion automatica desde Excel vinculada a esta tarea matriz.
           </p>
         </div>
@@ -511,7 +511,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             type="button"
             onClick={handleExport}
             disabled={validOperations.length === 0}
-            className="controlled-operations-secondary-button flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="controlled-operations-secondary-button flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-sunken px-3 text-xs font-medium text-ink transition-colors hover:border-accent hover:bg-accent-soft hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download size={14} />
             Exportar Excel
@@ -520,7 +520,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isParsing || isSaving}
-            className="controlled-operations-primary-button flex h-10 items-center gap-2 rounded-lg bg-[#506ff0] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60"
+            className="controlled-operations-primary-button flex h-10 items-center gap-2 rounded-lg bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Upload size={14} />
             {isParsing ? 'Leyendo...' : 'Importar Excel'}
@@ -530,24 +530,24 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
 
       <div className="p-4">
         {error && (
-          <div className="mb-3 flex items-start gap-2 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
             <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {previewOperations.length > 0 && (
-          <div className="mb-4 rounded-xl border border-[#506ff0]/40 bg-[#506ff0]/10 p-4">
+          <div className="mb-4 rounded-xl border border-accent bg-accent-soft p-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                  <FileSpreadsheet size={16} className="text-[#9fb0ff]" />
+                <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <FileSpreadsheet size={16} className="text-accent" />
                   Preview de importacion
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-ink-soft">
                   {fileName} - {validPreviewOperations.length} operaciones detectadas en {Object.keys(groupedPreview).length} secciones.
                 </p>
-                <p className="mt-1 text-xs text-slate-500">Total moneda registro: {formatMoney(previewAmountPen)}</p>
+                <p className="mt-1 text-xs text-ink-faint">Total moneda registro: {formatMoney(previewAmountPen)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -557,7 +557,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                     setFileName('');
                   }}
                   disabled={isSaving}
-                  className="flex h-10 items-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/60 px-3 text-xs font-medium text-slate-200 transition-colors hover:bg-[#1e253c]"
+                  className="flex h-10 items-center gap-2 rounded-lg border border-line bg-surface-sunken px-3 text-xs font-medium text-ink transition-colors hover:bg-surface-sunken"
                 >
                   <X size={14} />
                   Cancelar
@@ -568,7 +568,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                     void handleSavePreview();
                   }}
                   disabled={isSaving}
-                  className="flex h-10 items-center gap-2 rounded-lg bg-[#10b981] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#34d399] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-10 items-center gap-2 rounded-lg bg-positive px-3 text-xs font-semibold text-white transition-colors hover:bg-positive disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Check size={14} />
                   {isSaving ? 'Guardando...' : 'Guardar en Supabase'}
@@ -585,9 +585,9 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             { label: 'Monto origen', value: formatMoney(totalAmountOrigin) },
             { label: 'Monto registro', value: formatMoney(totalAmountPen) },
           ].map((item) => (
-            <div key={item.label} className="rounded-xl border border-[#1e253c] bg-[#121827]/70 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{item.label}</p>
-              <p className="mt-2 truncate text-lg font-bold text-white">{item.value}</p>
+            <div key={item.label} className="rounded-xl border border-line bg-surface-muted p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">{item.label}</p>
+              <p className="mt-2 truncate text-lg font-bold text-ink">{item.value}</p>
             </div>
           ))}
         </div>
@@ -604,8 +604,8 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
                 className={clsx(
                   'controlled-operations-tab flex-shrink-0 rounded-lg border px-3 py-2 text-left text-xs transition-colors',
                   isActive
-                    ? 'controlled-operations-tab-active border-[#6d83ff] bg-[#506ff0]/20 text-white shadow-[0_0_18px_rgba(80,111,240,0.18)]'
-                    : 'controlled-operations-tab-idle border-[#1e253c] bg-[#121827]/60 text-slate-400 hover:border-[#506ff0]/50 hover:text-slate-200',
+                    ? 'controlled-operations-tab-active border-accent bg-accent-soft text-ink shadow-card'
+                    : 'controlled-operations-tab-idle border-line bg-surface-muted text-ink-soft hover:border-accent hover:text-ink',
                 )}
               >
                 <span className="block font-semibold">{section}</span>
@@ -615,10 +615,10 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
           })}
         </div>
 
-        <div className="hidden max-h-[420px] overflow-auto rounded-xl border border-[#1e253c] md:block scrollbar-hide">
+        <div className="hidden max-h-[420px] overflow-auto rounded-xl border border-line md:block scrollbar-hide">
           <table className="w-full min-w-[1040px] border-collapse text-left">
-            <thead className="sticky top-0 z-10 bg-[#121827]">
-              <tr className="border-b border-[#1e253c] text-[10px] uppercase tracking-wide text-slate-500">
+            <thead className="sticky top-0 z-10 bg-surface-muted">
+              <tr className="border-b border-line text-[10px] uppercase tracking-wide text-ink-faint">
                 <th className="px-4 py-3">Operacion</th>
                 <th className="px-4 py-3">Parte vinculada</th>
                 <th className="px-4 py-3">Descripcion</th>
@@ -631,30 +631,30 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
             </thead>
             <tbody>
               {visibleOperations.map((operation) => (
-                <tr key={operation.id} className="border-b border-[#1e253c]/70 transition-colors last:border-0 hover:bg-[#1e253c]/50">
-                  <td className="px-4 py-3 text-sm font-semibold text-white">{operation.operation_number || '-'}</td>
-                  <td className="max-w-[220px] px-4 py-3 text-xs text-slate-300">
+                <tr key={operation.id} className="border-b border-line transition-colors last:border-0 hover:bg-surface-sunken">
+                  <td className="px-4 py-3 text-sm font-semibold text-ink">{operation.operation_number || '-'}</td>
+                  <td className="max-w-[220px] px-4 py-3 text-xs text-ink-soft">
                     <span className="line-clamp-2">{operation.related_party || '-'}</span>
                   </td>
-                  <td className="max-w-[280px] px-4 py-3 text-xs text-slate-300">
+                  <td className="max-w-[280px] px-4 py-3 text-xs text-ink-soft">
                     <span className="line-clamp-2">{operation.transaction_description || '-'}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {operation.transaction_code ? <OperationStatusBadge label={operation.transaction_code} /> : <span className="text-xs text-slate-500">-</span>}
+                    {operation.transaction_code ? <OperationStatusBadge label={operation.transaction_code} /> : <span className="text-xs text-ink-faint">-</span>}
                   </td>
-                  <td className="max-w-[180px] px-4 py-3 text-xs text-slate-300">
+                  <td className="max-w-[180px] px-4 py-3 text-xs text-ink-soft">
                     <span className="line-clamp-2">{operation.transaction_type || '-'}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs font-semibold text-slate-200">{operation.currency || '-'}</td>
-                  <td className="px-4 py-3 text-right text-xs font-semibold text-slate-200">{formatMoney(operation.amount_origin)}</td>
-                  <td className="px-4 py-3 text-right text-xs font-semibold text-white">{formatMoney(operation.amount_pen)}</td>
+                  <td className="px-4 py-3 text-xs font-semibold text-ink">{operation.currency || '-'}</td>
+                  <td className="px-4 py-3 text-right text-xs font-semibold text-ink">{formatMoney(operation.amount_origin)}</td>
+                  <td className="px-4 py-3 text-right text-xs font-semibold text-ink">{formatMoney(operation.amount_pen)}</td>
                 </tr>
               ))}
               {visibleOperations.length > 0 && (
-                <tr className="border-t border-[#506ff0]/40 bg-[#506ff0]/10">
-                  <td className="px-4 py-3 text-sm font-bold uppercase text-white" colSpan={6}>Total</td>
-                  <td className="px-4 py-3 text-right text-xs font-bold text-white">{formatMoney(visibleTotalAmountOrigin)}</td>
-                  <td className="px-4 py-3 text-right text-xs font-bold text-white">{formatMoney(visibleTotalAmountPen)}</td>
+                <tr className="border-t border-accent bg-accent-soft">
+                  <td className="px-4 py-3 text-sm font-bold uppercase text-ink" colSpan={6}>Total</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-ink">{formatMoney(visibleTotalAmountOrigin)}</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-ink">{formatMoney(visibleTotalAmountPen)}</td>
                 </tr>
               )}
             </tbody>
@@ -663,46 +663,46 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
 
         <div className="grid gap-3 md:hidden">
           {visibleOperations.map((operation) => (
-            <article key={operation.id} className="rounded-xl border border-[#1e253c] bg-[#121827]/70 p-4">
+            <article key={operation.id} className="rounded-xl border border-line bg-surface-muted p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-bold text-white">{operation.operation_number || 'Operacion sin numero'}</p>
-                  <p className="mt-1 text-xs text-slate-400">{operation.related_party || 'Sin parte vinculada'}</p>
+                  <p className="text-sm font-bold text-ink">{operation.operation_number || 'Operacion sin numero'}</p>
+                  <p className="mt-1 text-xs text-ink-soft">{operation.related_party || 'Sin parte vinculada'}</p>
                 </div>
                 {operation.transaction_code && <OperationStatusBadge label={operation.transaction_code} />}
               </div>
-              <p className="mt-3 text-xs leading-relaxed text-slate-300">{operation.transaction_description || 'Sin descripcion.'}</p>
+              <p className="mt-3 text-xs leading-relaxed text-ink-soft">{operation.transaction_description || 'Sin descripcion.'}</p>
               <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <p className="text-slate-500">Divisa</p>
-                  <p className="mt-1 font-semibold text-slate-200">{operation.currency || '-'}</p>
+                  <p className="text-ink-faint">Divisa</p>
+                  <p className="mt-1 font-semibold text-ink">{operation.currency || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Tipo</p>
-                  <p className="mt-1 font-semibold text-slate-200">{operation.transaction_type || '-'}</p>
+                  <p className="text-ink-faint">Tipo</p>
+                  <p className="mt-1 font-semibold text-ink">{operation.transaction_type || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Monto origen</p>
-                  <p className="mt-1 font-semibold text-slate-200">{formatMoney(operation.amount_origin)}</p>
+                  <p className="text-ink-faint">Monto origen</p>
+                  <p className="mt-1 font-semibold text-ink">{formatMoney(operation.amount_origin)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Monto registro</p>
-                  <p className="mt-1 font-semibold text-white">{formatMoney(operation.amount_pen)}</p>
+                  <p className="text-ink-faint">Monto registro</p>
+                  <p className="mt-1 font-semibold text-ink">{formatMoney(operation.amount_pen)}</p>
                 </div>
               </div>
             </article>
           ))}
           {visibleOperations.length > 0 && (
-            <div className="rounded-xl border border-[#506ff0]/40 bg-[#506ff0]/10 p-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-white">Total de la seccion</p>
+            <div className="rounded-xl border border-accent bg-accent-soft p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-ink">Total de la seccion</p>
               <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <p className="text-slate-500">Monto origen</p>
-                  <p className="mt-1 font-bold text-white">{formatMoney(visibleTotalAmountOrigin)}</p>
+                  <p className="text-ink-faint">Monto origen</p>
+                  <p className="mt-1 font-bold text-ink">{formatMoney(visibleTotalAmountOrigin)}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Monto registro</p>
-                  <p className="mt-1 font-bold text-white">{formatMoney(visibleTotalAmountPen)}</p>
+                  <p className="text-ink-faint">Monto registro</p>
+                  <p className="mt-1 font-bold text-ink">{formatMoney(visibleTotalAmountPen)}</p>
                 </div>
               </div>
             </div>
@@ -710,10 +710,10 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
         </div>
 
         {!isLoading && visibleOperations.length === 0 && (
-          <div className="rounded-xl border border-dashed border-[#2a334e] bg-[#121827]/40 px-4 py-8 text-center">
-            <FileSpreadsheet size={26} className="mx-auto text-slate-500" />
-            <p className="mt-3 text-sm font-semibold text-white">Aun no hay operaciones controladas</p>
-            <p className="mt-1 text-xs text-slate-500">Importa un Excel estructurado para alimentar esta seccion.</p>
+          <div className="rounded-xl border border-dashed border-line bg-surface-muted px-4 py-8 text-center">
+            <FileSpreadsheet size={26} className="mx-auto text-ink-faint" />
+            <p className="mt-3 text-sm font-semibold text-ink">Aun no hay operaciones controladas</p>
+            <p className="mt-1 text-xs text-ink-faint">Importa un Excel estructurado para alimentar esta seccion.</p>
           </div>
         )}
       </div>

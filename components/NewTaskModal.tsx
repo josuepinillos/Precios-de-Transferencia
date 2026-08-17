@@ -69,70 +69,70 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#0b0f19]/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 bg-ink/25 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="glass border border-[#2a334e] rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative"
+              className="card border border-line rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] overflow-y-auto p-4 sm:p-6 shadow-2xl relative"
             >
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1"
+                className="absolute top-4 right-4 text-ink-soft hover:text-ink transition-colors p-1"
               >
                 <X size={20} />
               </button>
 
-              <h2 className="text-xl font-bold text-white mb-6">Nueva Tarea</h2>
+              <h2 className="text-xl font-bold text-ink mb-6">Nueva Tarea</h2>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {(submitError || storeError) && (
-                  <div className="rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fecaca]">
+                  <div className="rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical-ink">
                     {submitError || storeError}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Título de la Tarea *</label>
+                  <label className="block text-xs font-medium text-ink-soft mb-1">Título de la Tarea *</label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors"
+                    className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors"
                     placeholder="Ej. Análisis de comparables..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Descripción</label>
+                  <label className="block text-xs font-medium text-ink-soft mb-1">Descripción</label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors resize-none h-24"
+                    className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors resize-none h-24"
                     placeholder="Detalles de la tarea..."
                   />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Día asignado</label>
+                    <label className="block text-xs font-medium text-ink-soft mb-1">Día asignado</label>
                     <input
                       type="date"
                       value={dateBlock}
                       onChange={(event) => setDateBlock(event.target.value)}
-                      className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors"
+                      className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors"
                     />
                   </div>
 
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-400 mb-1">Prioridad</label>
+                    <label className="block text-xs font-medium text-ink-soft mb-1">Prioridad</label>
                     <select
                       value={prioridad}
                       onChange={(e) => setPrioridad(e.target.value as Priority | '')}
-                      className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
+                      className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors appearance-none"
                     >
                       <option value="">Normal (Ninguna)</option>
                       <option value="Alta">Alta</option>
@@ -143,11 +143,11 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Responsable</label>
+                  <label className="block text-xs font-medium text-ink-soft mb-1">Responsable</label>
                   <select
                     value={assigneeIdx}
                     onChange={(e) => setAssigneeIdx(Number(e.target.value))}
-                    className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors appearance-none"
+                    className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors appearance-none"
                   >
                     {MOCK_USERS.map((user, idx) => (
                       <option key={idx} value={idx}>{user.name}</option>
@@ -159,14 +159,14 @@ export const NewTaskModal = ({ isOpen, onClose }: NewTaskModalProps) => {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-[#1e253c] transition-colors"
+                    className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-ink-soft hover:text-ink hover:bg-surface-sunken transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-white bg-[#506ff0] hover:bg-[#3f5bc4] transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="px-4 py-3 sm:py-2 rounded-lg text-sm font-medium text-white bg-brand hover:bg-accent-hover transition-colors shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isSaving ? 'Guardando...' : 'Crear Tarea'}
                   </button>

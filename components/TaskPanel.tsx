@@ -56,9 +56,9 @@ const SortableSubtaskRow = ({
       ref={sortable.setNodeRef}
       style={style}
       className={clsx(
-        "flex items-center justify-between gap-2 rounded-lg border border-transparent p-2 transition-all group hover:bg-[#1e253c]/50",
+        "flex items-center justify-between gap-2 rounded-lg border border-transparent p-2 transition-all group hover:bg-surface-sunken",
         sortable.isDragging &&
-          "scale-[1.01] border-[#506ff0]/60 bg-[#1e253c]/80 opacity-95 shadow-[0_14px_32px_rgba(15,23,42,0.32)]",
+          "scale-[1.01] border-accent bg-surface-sunken opacity-95 shadow-[0_14px_32px_rgba(15,23,42,0.32)]",
       )}
     >
       {children({
@@ -248,7 +248,7 @@ export const TaskPanel = () => {
         initial={{ opacity: 0, y: 24, x: 0 }}
         animate={{ opacity: 1, y: 0, x: 0 }}
         exit={{ opacity: 0, y: 24, x: 0 }}
-        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full glass rounded-t-2xl border border-[#1e253c] p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:w-[350px] xl:h-full xl:flex-shrink-0 xl:p-6"
+        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full card rounded-t-2xl border border-line p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:w-[350px] xl:h-full xl:flex-shrink-0 xl:p-6"
       >
         <div className="flex justify-between items-start mb-6 gap-2">
           {isEditing ? (
@@ -256,20 +256,20 @@ export const TaskPanel = () => {
               type="text" 
               value={editTitle} 
               onChange={(e) => setEditTitle(e.target.value)}
-              className="min-w-0 flex-1 bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-3 py-2 outline-none text-base sm:text-lg font-bold"
+              className="min-w-0 flex-1 bg-surface-sunken border border-accent text-ink rounded-lg px-3 py-2 outline-none text-base sm:text-lg font-bold"
               autoFocus
             />
           ) : (
-            <h2 className="text-lg font-bold text-white leading-tight flex-1">{selectedTask.title}</h2>
+            <h2 className="text-lg font-bold text-ink leading-tight flex-1">{selectedTask.title}</h2>
           )}
           
           <div className="flex items-center gap-1">
             {!isEditing && (
-              <button onClick={() => setIsEditing(true)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-[#1e253c]">
+              <button onClick={() => setIsEditing(true)} className="w-10 h-10 flex items-center justify-center text-ink-soft hover:text-ink rounded-lg hover:bg-surface-sunken">
                 <Edit2 size={16} />
               </button>
             )}
-            <button onClick={() => selectTask(null)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-[#1e253c]">
+            <button onClick={() => selectTask(null)} className="w-10 h-10 flex items-center justify-center text-ink-soft hover:text-ink rounded-lg hover:bg-surface-sunken">
               <X size={20} />
             </button>
           </div>
@@ -277,54 +277,54 @@ export const TaskPanel = () => {
 
         <div className="flex-1 overflow-y-auto scrollbar-hide pr-2 pb-4">
           {error && (
-            <div className="mb-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+            <div className="mb-4 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
               {error}
             </div>
           )}
 
           {/* Description */}
           <div className="mb-6 relative group">
-            <h3 className="text-xs text-slate-400 font-medium mb-2">Descripción</h3>
+            <h3 className="text-xs text-ink-soft font-medium mb-2">Descripción</h3>
             {isEditing ? (
               <textarea 
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full bg-[#1e253c] border border-[#506ff0] text-white rounded-lg px-3 py-3 sm:py-2 outline-none text-sm resize-none h-24"
+                className="w-full bg-surface-sunken border border-accent text-ink rounded-lg px-3 py-3 sm:py-2 outline-none text-sm resize-none h-24"
               />
             ) : (
-              <p className="text-sm text-slate-300 leading-relaxed">
-                {selectedTask.description || <span className="italic text-slate-500">Sin descripción</span>}
+              <p className="text-sm text-ink-soft leading-relaxed">
+                {selectedTask.description || <span className="italic text-ink-faint">Sin descripción</span>}
               </p>
             )}
           </div>
 
           {isEditing && (
             <div className="flex justify-end gap-2 mb-6">
-              <button onClick={() => setIsEditing(false)} className="text-xs px-3 py-2.5 sm:py-1.5 text-slate-400 hover:text-white">Cancelar</button>
-              <button onClick={handleSaveEdit} className="text-xs px-3 py-2.5 sm:py-1.5 bg-[#506ff0] text-white rounded-lg flex items-center gap-1"><Check size={14}/> Guardar</button>
+              <button onClick={() => setIsEditing(false)} className="text-xs px-3 py-2.5 sm:py-1.5 text-ink-soft hover:text-ink">Cancelar</button>
+              <button onClick={handleSaveEdit} className="text-xs px-3 py-2.5 sm:py-1.5 bg-brand text-white rounded-lg flex items-center gap-1"><Check size={14}/> Guardar</button>
             </div>
           )}
 
           {/* Meta Info */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
-              <h3 className="text-xs text-slate-400 font-medium mb-2">Responsable</h3>
+              <h3 className="text-xs text-ink-soft font-medium mb-2">Responsable</h3>
               <div className="flex items-center gap-2">
                 <div className={clsx("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg", selectedTask.assignee.colorClass)}>
                   {selectedTask.assignee.initials}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white leading-tight">{selectedTask.assignee.name}</p>
+                  <p className="text-sm font-medium text-ink leading-tight">{selectedTask.assignee.name}</p>
                 </div>
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-xs text-slate-400 font-medium mb-2">Fecha límite</h3>
+              <h3 className="text-xs text-ink-soft font-medium mb-2">Fecha límite</h3>
               {isEditing ? (
                 <DatePicker2026 value={editDateBlock} onChange={setEditDateBlock} label="" />
               ) : (
-                <div className="flex items-center gap-2 text-slate-300 text-sm">
-                  <CalendarIcon size={14} className="text-slate-400" />
+                <div className="flex items-center gap-2 text-ink-soft text-sm">
+                  <CalendarIcon size={14} className="text-ink-soft" />
                     <span className="break-words">{selectedTask.dueDate}</span>
                 </div>
               )}
@@ -335,7 +335,7 @@ export const TaskPanel = () => {
             <button
               type="button"
               onClick={openMoveModal}
-              className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[#2a334e] bg-[#1e253c]/70 px-4 py-3 text-sm font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:bg-[#506ff0]/15 hover:text-white"
+              className="mb-6 flex w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:bg-accent-soft hover:text-ink"
             >
               <MoveRight size={16} />
               Mover a otra fecha
@@ -344,26 +344,26 @@ export const TaskPanel = () => {
 
           {/* Progress */}
           <div className="mb-8">
-            <h3 className="text-xs text-slate-400 font-medium mb-2">Progreso General</h3>
+            <h3 className="text-xs text-ink-soft font-medium mb-2">Progreso General</h3>
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-2 bg-[#1e253c] rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-surface-sunken rounded-full overflow-hidden">
                 <div 
                   className={clsx(
                     "h-full rounded-full transition-all duration-500",
-                    getTaskProgress(selectedTask.id) <= 30 ? 'bg-[#ef4444]' : 
-                    getTaskProgress(selectedTask.id) <= 70 ? 'bg-[#f59e0b]' : 'bg-[#10b981]'
+                    getTaskProgress(selectedTask.id) <= 30 ? 'bg-critical' : 
+                    getTaskProgress(selectedTask.id) <= 70 ? 'bg-caution' : 'bg-positive'
                   )}
                   style={{ width: `${getTaskProgress(selectedTask.id)}%` }}
                 ></div>
               </div>
-              <span className="text-sm font-medium text-white">{getTaskProgress(selectedTask.id)}%</span>
+              <span className="text-sm font-medium text-ink">{getTaskProgress(selectedTask.id)}%</span>
             </div>
           </div>
 
           {/* Subtasks */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs text-slate-400 font-medium">
+              <h3 className="text-xs text-ink-soft font-medium">
                 Subtareas ({selectedTask.subtasks.filter(s => s.completed).length}/{selectedTask.subtasks.length})
               </h3>
             </div>
@@ -389,11 +389,11 @@ export const TaskPanel = () => {
                           autoFocus
                           value={editingSubtaskTitle}
                           onChange={(e) => setEditingSubtaskTitle(e.target.value)}
-                          className="min-w-0 flex-1 bg-[#0b0f19] border border-[#506ff0] text-sm text-white rounded px-3 py-2 outline-none"
+                          className="min-w-0 flex-1 bg-canvas border border-accent text-sm text-ink rounded px-3 py-2 outline-none"
                         />
                         <button
                           type="submit"
-                          className="w-9 h-9 flex items-center justify-center text-[#10b981] hover:bg-[#10b981]/10 rounded transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-positive-ink hover:bg-positive-soft rounded transition-colors"
                         >
                           <Check size={14} />
                         </button>
@@ -403,7 +403,7 @@ export const TaskPanel = () => {
                             setEditingSubtaskId(null);
                             setEditingSubtaskAssigneeName('');
                           }}
-                          className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-ink-soft hover:text-ink hover:bg-surface-sunken rounded transition-colors"
                         >
                           <X size={14} />
                         </button>
@@ -411,10 +411,10 @@ export const TaskPanel = () => {
                       <select
                         value={editingSubtaskAssigneeName || subtaskAssignee.name}
                         onChange={(e) => setEditingSubtaskAssigneeName(e.target.value)}
-                        className="w-full bg-[#0b0f19] border border-[#2a334e] text-xs text-slate-200 rounded px-3 py-2 outline-none focus:border-[#506ff0]"
+                        className="w-full bg-canvas border border-line text-xs text-ink rounded px-3 py-2 outline-none focus:border-accent"
                       >
                         {TEAM_MEMBERS.map((member) => (
-                          <option key={member.name} value={member.name} className="bg-[#0e121e]">
+                          <option key={member.name} value={member.name} className="bg-surface">
                             {member.name}
                           </option>
                         ))}
@@ -427,7 +427,7 @@ export const TaskPanel = () => {
                         ref={setActivatorNodeRef}
                         {...attributes}
                         {...listeners}
-                        className="flex h-9 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-[#1e253c] hover:text-slate-200 active:cursor-grabbing"
+                        className="flex h-9 w-6 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-surface-sunken hover:text-ink active:cursor-grabbing"
                         title="Arrastrar para reordenar"
                         aria-label="Arrastrar subtarea"
                         aria-pressed={isDragging}
@@ -445,14 +445,14 @@ export const TaskPanel = () => {
                         <div className={clsx(
                           "w-4 h-4 flex-shrink-0 rounded flex items-center justify-center border transition-colors",
                           subtask.completed 
-                            ? "bg-[#10b981] border-[#10b981] text-white" 
-                            : "border-slate-500 group-hover:border-slate-400"
+                            ? "bg-positive border-positive text-white" 
+                            : "border-line-strong group-hover:border-ink-faint"
                         )}>
                           {subtask.completed && <svg viewBox="0 0 14 14" fill="none" className="w-3 h-3"><path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                         </div>
                         <span className={clsx(
                           "text-sm transition-colors break-words",
-                          subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
+                          subtask.completed ? "text-ink-soft line-through" : "text-ink"
                         )}>
                           {subtask.title}
                         </span>
@@ -473,7 +473,7 @@ export const TaskPanel = () => {
                             setEditingSubtaskAssigneeName(subtaskAssignee.name);
                             setConfirmDeleteId(null);
                           }}
-                          className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#1e253c] rounded transition-colors"
+                          className="w-9 h-9 flex items-center justify-center text-ink-soft hover:text-ink hover:bg-surface-sunken rounded transition-colors"
                           title="Editar subtarea"
                         >
                           <Pencil size={14} />
@@ -483,8 +483,8 @@ export const TaskPanel = () => {
                           className={clsx(
                             "p-1.5 rounded transition-colors flex items-center gap-1",
                             confirmDeleteId === subtask.id 
-                              ? "bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/50" 
-                              : "text-slate-400 hover:text-[#ef4444] hover:bg-[#ef4444]/10 border border-transparent"
+                              ? "bg-critical-soft text-critical-ink border border-critical/30" 
+                              : "text-ink-soft hover:text-critical-ink hover:bg-critical-soft border border-transparent"
                           )}
                           title={confirmDeleteId === subtask.id ? "Haz clic de nuevo para eliminar" : "Eliminar subtarea"}
                         >
@@ -512,18 +512,18 @@ export const TaskPanel = () => {
                     value={newSubtaskTitle}
                     onChange={(e) => setNewSubtaskTitle(e.target.value)}
                     placeholder="Nombre de la subtarea..."
-                    className="min-w-0 flex-1 bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
+                    className="min-w-0 flex-1 bg-surface-sunken border border-line text-ink rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-accent"
                   />
-                  <button type="button" onClick={() => setIsAddingSubtask(false)} className="w-11 h-11 flex items-center justify-center text-slate-400 hover:text-white"><X size={16}/></button>
-                  <button type="submit" disabled={isSavingSubtask} className="w-11 h-11 flex items-center justify-center bg-[#506ff0] text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
+                  <button type="button" onClick={() => setIsAddingSubtask(false)} className="w-11 h-11 flex items-center justify-center text-ink-soft hover:text-ink"><X size={16}/></button>
+                  <button type="submit" disabled={isSavingSubtask} className="w-11 h-11 flex items-center justify-center bg-brand text-white rounded-lg disabled:opacity-60"><Check size={16}/></button>
                 </div>
                 <select
                   value={newSubtaskAssigneeName}
                   onChange={(e) => setNewSubtaskAssigneeName(e.target.value)}
-                  className="w-full bg-[#1e253c] border border-[#2a334e] text-slate-200 rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-[#506ff0]"
+                  className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-3 py-3 sm:py-2 text-sm outline-none focus:border-accent"
                 >
                   {TEAM_MEMBERS.map((member) => (
-                    <option key={member.name} value={member.name} className="bg-[#0e121e]">
+                    <option key={member.name} value={member.name} className="bg-surface">
                       {member.name}
                     </option>
                   ))}
@@ -532,7 +532,7 @@ export const TaskPanel = () => {
             ) : (
               <button 
                 onClick={() => setIsAddingSubtask(true)}
-                className="mt-4 flex items-center gap-2 px-4 py-3 sm:py-2 bg-[#1e253c] hover:bg-[#506ff0] text-white text-sm rounded-lg transition-colors w-full justify-center"
+                className="mt-4 flex items-center gap-2 px-4 py-3 sm:py-2 border border-line-strong bg-surface hover:bg-surface-sunken text-ink-soft hover:text-ink text-sm rounded-control transition-colors w-full justify-center"
               >
                 <Plus size={16} /> Agregar Subtarea
               </button>
@@ -542,7 +542,7 @@ export const TaskPanel = () => {
           <div className="mt-12 flex justify-center">
             <button 
               onClick={handleDeleteTask}
-              className="flex items-center gap-2 text-xs text-[#ef4444]/70 hover:text-[#ef4444] transition-colors"
+              className="flex items-center gap-2 text-xs text-critical-ink/70 hover:text-critical-ink transition-colors"
             >
               <Trash2 size={14}/> Eliminar Tarea
             </button>
@@ -557,33 +557,33 @@ export const TaskPanel = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#020617]/70 px-4 py-4 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 px-4 py-4 backdrop-blur-sm sm:items-center"
           onClick={() => setIsMoveModalOpen(false)}
         >
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
-            className="w-full max-w-md rounded-2xl border border-[#1e253c] bg-[#0e121e] p-5 shadow-2xl"
+            className="w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-bold text-white">Mover tarea</h3>
-                <p className="mt-1 text-sm text-slate-400">{selectedTask.title}</p>
+                <h3 className="text-lg font-bold text-ink">Mover tarea</h3>
+                <p className="mt-1 text-sm text-ink-soft">{selectedTask.title}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsMoveModalOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="mb-4 rounded-xl border border-[#1e253c] bg-[#121827] px-4 py-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Fecha actual</p>
-              <p className="mt-1 text-sm font-semibold text-slate-200">{formatPickerDate(selectedTask.dateBlock)}</p>
+            <div className="mb-4 rounded-xl border border-line bg-surface-muted px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Fecha actual</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{formatPickerDate(selectedTask.dateBlock)}</p>
             </div>
 
             <DatePicker2026
@@ -600,7 +600,7 @@ export const TaskPanel = () => {
               <button
                 type="button"
                 onClick={() => setIsMoveModalOpen(false)}
-                className="rounded-lg px-4 py-3 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:py-2"
+                className="rounded-lg px-4 py-3 text-sm font-medium text-ink-soft transition-colors hover:text-ink sm:py-2"
               >
                 Cancelar
               </button>
@@ -610,7 +610,7 @@ export const TaskPanel = () => {
                   void handleMoveTask();
                 }}
                 disabled={isMovingTask}
-                className="flex items-center justify-center gap-2 rounded-lg bg-[#506ff0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60 sm:py-2"
+                className="flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60 sm:py-2"
               >
                 <Check size={16} />
                 {isMovingTask ? 'Moviendo...' : 'Guardar fecha'}

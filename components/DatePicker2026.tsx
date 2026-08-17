@@ -66,48 +66,48 @@ export const DatePicker2026 = ({ value, onChange, label = 'Día asignado', error
 
   return (
     <div ref={pickerRef} className="relative">
-      {label && <label className="block text-xs font-medium text-slate-400 mb-1">{label}</label>}
+      {label && <label className="block text-xs font-medium text-ink-soft mb-1">{label}</label>}
       <button
         type="button"
         onClick={() => {
           setVisibleMonth(selected.month);
           setIsOpen((current) => !current);
         }}
-        className="w-full bg-[#1e253c] border border-[#2a334e] text-white rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-[#506ff0] transition-colors flex items-center justify-between gap-3"
+        className="w-full bg-surface-sunken border border-line text-ink rounded-lg px-4 py-3 sm:py-2 outline-none focus:border-accent transition-colors flex items-center justify-between gap-3"
       >
         <span className="text-sm font-medium">{formatPickerDate(safeValue)}</span>
-        <Calendar size={16} className="text-slate-400" />
+        <Calendar size={16} className="text-ink-soft" />
       </button>
-      {error && <p className="mt-1 text-xs text-[#ef4444]">{error}</p>}
+      {error && <p className="mt-1 text-xs text-critical-ink">{error}</p>}
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-2xl border border-[#2a334e] bg-[#0e121e] p-3 shadow-2xl sm:min-w-[300px]">
-          <div className="flex items-center justify-between gap-2 border-b border-[#1e253c] pb-3">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 rounded-2xl border border-line bg-surface p-3 shadow-2xl sm:min-w-[300px]">
+          <div className="flex items-center justify-between gap-2 border-b border-line pb-3">
             <button
               type="button"
               onClick={() => setVisibleMonth((month) => Math.max(0, month - 1))}
               disabled={visibleMonth === 0}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-[#1e253c] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-sunken hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
               aria-label="Mes anterior"
             >
               <ChevronLeft size={16} />
             </button>
             <div className="text-center">
-              <p className="text-sm font-bold text-white">{MONTHS[visibleMonth]} 2026</p>
-              <p className="text-[10px] uppercase tracking-wide text-slate-500">01/01/2026 - 31/12/2026</p>
+              <p className="text-sm font-bold text-ink">{MONTHS[visibleMonth]} 2026</p>
+              <p className="text-[10px] uppercase tracking-wide text-ink-faint">01/01/2026 - 31/12/2026</p>
             </div>
             <button
               type="button"
               onClick={() => setVisibleMonth((month) => Math.min(11, month + 1))}
               disabled={visibleMonth === 11}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-[#1e253c] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-sunken hover:text-ink disabled:cursor-not-allowed disabled:opacity-30"
               aria-label="Mes siguiente"
             >
               <ChevronRight size={16} />
             </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-slate-500">
+          <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-ink-faint">
             {WEEK_DAYS.map((day, index) => (
               <span key={`${day}-${index}`} className="py-1">{day}</span>
             ))}
@@ -129,8 +129,8 @@ export const DatePicker2026 = ({ value, onChange, label = 'Día asignado', error
                   className={clsx(
                     "h-9 rounded-lg text-sm font-medium transition-colors",
                     isSelected
-                      ? "bg-[#506ff0] text-white shadow-[0_0_14px_rgba(80,111,240,0.35)]"
-                      : "text-slate-300 hover:bg-[#1e253c] hover:text-white",
+                      ? "bg-brand text-white shadow-card"
+                      : "text-ink-soft hover:bg-surface-sunken hover:text-ink",
                   )}
                 >
                   {day}

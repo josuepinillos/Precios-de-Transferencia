@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { Folder } from 'lucide-react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
+import { Avatar } from './ui/Avatar';
+import { ProgressBar } from './ui/Progress';
+import { toneForProgress } from './ui/Badge';
 
 type TimelineDay = {
   date: string;
@@ -57,12 +59,6 @@ export const Timeline = () => {
   const filteredTasks = getFilteredTasks();
   const timelineDays = buildTimelineDays(filteredTasks.map((task) => task.dateBlock));
 
-  const getProgressColor = (progress: number) => {
-    if (progress <= 30) return 'bg-[#ef4444]'; // Red
-    if (progress <= 70) return 'bg-[#f59e0b]'; // Yellow
-    return 'bg-[#10b981]'; // Green
-  };
-
   const moveTaskToDate = async (taskId: string, targetDate: string) => {
     const task = tasks.find((item) => item.id === taskId);
     if (!task || task.dateBlock === targetDate) return;
@@ -96,20 +92,20 @@ export const Timeline = () => {
   };
 
   return (
-    <div className="glass rounded-2xl p-4 sm:p-5 lg:p-6 relative h-auto min-h-[520px] lg:h-full xl:h-[600px] flex flex-col">
-      {/* Timeline List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide relative pr-0 sm:pr-2">
-        {/* Luminous Vertical Line */}
-        <div className="absolute left-[30px] sm:left-[44px] top-4 bottom-4 w-px bg-gradient-to-b from-[#506ff0]/50 via-[#8b5cf6]/50 to-transparent"></div>
+    <div className="card flex h-auto min-h-[520px] flex-col p-4 sm:p-5 lg:h-full xl:h-[720px]">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        {/* Spine connecting the day markers. */}
+        <div className="absolute bottom-6 left-[27px] top-6 w-px bg-line sm:left-[39px]" />
 
-        <div className="flex flex-col gap-6 sm:gap-8 lg:gap-10">
-          {timelineDays.map((day, idx) => {
+        <div className="flex flex-col gap-7">
+          {timelineDays.map((day) => {
             const dayTasks = filteredTasks.filter(t => t.dateBlock === day.date);
             const isDropTarget = dropTargetDate === day.date;
-            
+            const [dayNumber, monthLabel, yearLabel] = day.label.split(' ');
+
             return (
               <div
-                key={idx}
+                key={day.date}
                 onDragOver={(event) => {
                   event.preventDefault();
                   event.dataTransfer.dropEffect = 'move';
@@ -124,37 +120,39 @@ export const Timeline = () => {
                   void handleDrop(event, day.date);
                 }}
                 className={clsx(
-                  "flex gap-3 sm:gap-6 relative rounded-2xl transition-all",
-                  isDropTarget && "bg-[#506ff0]/10 ring-1 ring-[#506ff0]/50 shadow-[0_0_20px_rgba(80,111,240,0.18)]",
+                  'relative flex gap-3 rounded-card p-1 transition-colors sm:gap-5',
+                  isDropTarget && 'bg-accent-soft',
                 )}
               >
-                {/* Date Block */}
-                <div className="w-[58px] sm:w-[100px] flex-shrink-0 flex flex-col items-center z-10 relative">
-                  <div className={clsx(
-                    "bg-[#1e253c] rounded-xl w-[46px] h-[58px] sm:w-[60px] sm:h-[70px] flex flex-col items-center justify-center border shadow-lg mb-2 transition-all",
-                    isDropTarget ? "border-[#506ff0] shadow-[0_0_18px_rgba(80,111,240,0.25)]" : "border-[#2a334e]",
-                  )}>
-                    <span className="text-xl sm:text-2xl font-bold text-white leading-none">{day.label.split(' ')[0]}</span>
-                    <span className="text-[10px] text-slate-400 uppercase tracking-wider mt-1">
-                      {day.label.split(' ')[1]}<br/>{day.label.split(' ')[2]}
+                {/* Date marker */}
+                <div className="relative z-10 flex w-[54px] flex-shrink-0 flex-col items-center sm:w-[74px]">
+                  <div
+                    className={clsx(
+                      'flex h-[54px] w-[54px] flex-col items-center justify-center rounded-card border bg-surface transition-colors',
+                      isDropTarget ? 'border-accent' : 'border-line',
+                    )}
+                  >
+                    <span className="text-lg font-semibold leading-none tabular text-ink">{dayNumber}</span>
+                    <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+                      {monthLabel}
                     </span>
                   </div>
-                  {/* Purple Dot on Line */}
-                  <div className="w-3 h-3 rounded-full bg-[#8b5cf6] border-2 border-[#0e121e] shadow-[0_0_10px_rgba(139,92,246,0.8)] absolute top-7 sm:top-8 -right-[8px] sm:-right-[18px]"></div>
+                  <span className="mt-1 text-[10px] text-ink-faint">{yearLabel}</span>
                 </div>
 
                 {/* Tasks for the day */}
-                <div className="min-w-0 flex-1 flex flex-col gap-3 pt-1 sm:pt-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-2.5 pt-1">
                   {dayTasks.length > 0 ? (
                     dayTasks.map(task => {
                       const progress = getTaskProgress(task.id);
                       const isSelected = selectedTaskId === task.id;
-                      
+
                       return (
-                        <motion.div 
+                        <motion.div
                           key={task.id}
                           draggable
-                          whileHover={{ scale: 1.01 }}
+                          whileHover={{ y: -1 }}
+                          transition={{ duration: 0.15 }}
                           onDragStartCapture={(event) => handleDragStart(event, task.id)}
                           onDragEnd={() => {
                             setDraggedTaskId(null);
@@ -162,57 +160,61 @@ export const Timeline = () => {
                           }}
                           onClick={() => selectTask(task.id)}
                           className={clsx(
-                            "glass rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-grab active:cursor-grabbing transition-all border",
-                            isSelected 
-                              ? "border-[#506ff0] bg-[#1e253c]/80 shadow-[0_0_15px_rgba(80,111,240,0.15)]" 
-                              : "border-[#2a334e] hover:border-[#3f4b73]",
-                            draggedTaskId === task.id && "opacity-60 scale-[0.99] border-[#8b5cf6] shadow-[0_0_24px_rgba(139,92,246,0.22)]"
+                            'flex cursor-grab flex-col gap-3 rounded-card border bg-surface p-3.5 transition-[border-color,box-shadow] duration-150 active:cursor-grabbing sm:flex-row sm:items-center sm:justify-between sm:gap-5',
+                            isSelected
+                              ? 'border-accent shadow-focus'
+                              : 'border-line hover:border-line-strong hover:shadow-card',
+                            draggedTaskId === task.id && 'opacity-55',
                           )}
                         >
-                          <div className="min-w-0 flex items-center gap-3 sm:gap-4 flex-1">
-                            <div className={clsx(
-                              "w-8 h-8 rounded-lg flex items-center justify-center",
-                              isSelected ? "bg-[#506ff0]/20 text-[#506ff0]" : "bg-[#1e253c] text-[#3b82f6]"
-                            )}>
-                              <Folder size={16} />
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
+                            <span
+                              className={clsx(
+                                'h-8 w-1 flex-shrink-0 rounded-pill',
+                                progress === 100 ? 'bg-positive' : progress > 0 ? 'bg-caution' : 'bg-line-strong',
+                              )}
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-ink">{task.title}</p>
+                              <p className="mt-0.5 truncate text-xs text-ink-faint">{task.empresa}</p>
                             </div>
-                            <span className="text-sm font-medium text-white leading-snug break-words">{task.title}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-3 sm:gap-8 w-full sm:w-auto sm:min-w-[220px] justify-between sm:justify-end">
-                            {/* Progress Bar */}
-                            <div className="flex items-center gap-3 flex-1 sm:w-40">
-                              <div className="flex-1 h-1.5 bg-[#1e253c] rounded-full overflow-hidden">
-                                <div 
-                                  className={clsx("h-full rounded-full transition-all duration-500", getProgressColor(progress))}
-                                  style={{ width: `${progress}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs text-slate-400 font-medium w-8 text-right">{progress}%</span>
+
+                          <div className="flex w-full items-center justify-between gap-4 sm:w-auto sm:min-w-[210px] sm:justify-end">
+                            <div className="flex flex-1 items-center gap-2.5 sm:w-32 sm:flex-none">
+                              <ProgressBar value={progress} tone={toneForProgress(progress)} />
+                              <span className="w-9 text-right text-xs font-medium tabular text-ink-soft">{progress}%</span>
                             </div>
-                            
-                            <div 
-                              className={clsx("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg", task.assignee.colorClass)}
-                              title={task.assignee.name}
-                            >
-                              {task.assignee.initials}
-                            </div>
+                            <Avatar
+                              initials={task.assignee.initials}
+                              colorClass={task.assignee.colorClass}
+                              name={task.assignee.name}
+                            />
                           </div>
                         </motion.div>
                       );
                     })
                   ) : (
-                    <div className={clsx(
-                      "h-[70px] border border-dashed rounded-xl flex items-center justify-center text-xs transition-colors",
-                      isDropTarget ? "border-[#506ff0] text-[#93c5fd] bg-[#506ff0]/10" : "border-[#2a334e] text-slate-500",
-                    )}>
-                      {isDropTarget ? "Soltar tarea aquí" : "Sin tareas asignadas"}
+                    <div
+                      className={clsx(
+                        'flex h-[62px] items-center justify-center rounded-card border border-dashed text-xs transition-colors',
+                        isDropTarget ? 'border-accent bg-accent-soft text-accent-ink' : 'border-line text-ink-faint',
+                      )}
+                    >
+                      {isDropTarget ? 'Soltar tarea aquí' : 'Sin tareas asignadas'}
                     </div>
                   )}
                 </div>
               </div>
             );
           })}
+
+          {timelineDays.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-sm font-medium text-ink">Sin tareas en el rango actual</p>
+              <p className="mt-1 text-sm text-ink-soft">Ajusta los filtros para ver el plan de trabajo.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

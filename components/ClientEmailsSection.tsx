@@ -194,17 +194,17 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
   };
 
   return (
-    <section className="mt-5 overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50">
-      <div className="flex flex-col gap-4 border-b border-[#1e253c] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="mt-5 overflow-hidden rounded-2xl border border-line bg-surface">
+      <div className="flex flex-col gap-4 border-b border-line px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">Correos con el cliente</h3>
-          <p className="mt-1 text-xs text-slate-400">Registro manual de comunicaciones relevantes para esta tarea matriz.</p>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-ink">Correos con el cliente</h3>
+          <p className="mt-1 text-xs text-ink-soft">Registro manual de comunicaciones relevantes para esta tarea matriz.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex h-10 items-center gap-2 rounded-lg bg-[#506ff0] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#6d83ff]"
+            className="flex h-10 items-center gap-2 rounded-lg bg-brand px-3 text-xs font-semibold text-white transition-colors hover:bg-brand"
           >
             <Plus size={14} />
             Agregar correo
@@ -214,15 +214,15 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
 
       <div className="p-4">
         {error && (
-          <div className="mb-3 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+          <div className="mb-3 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
             {error}
           </div>
         )}
 
-        <div className="hidden max-h-[360px] overflow-y-auto rounded-xl border border-[#1e253c] md:block scrollbar-hide">
+        <div className="hidden max-h-[360px] overflow-y-auto rounded-xl border border-line md:block scrollbar-hide">
           <table className="w-full min-w-[760px] border-collapse text-left">
-            <thead className="sticky top-0 z-10 bg-[#121827]">
-              <tr className="border-b border-[#1e253c] text-[10px] uppercase tracking-wide text-slate-500">
+            <thead className="sticky top-0 z-10 bg-surface-muted">
+              <tr className="border-b border-line text-[10px] uppercase tracking-wide text-ink-faint">
                 <th className="px-4 py-3">Asunto</th>
                 <th className="px-4 py-3">Remitente</th>
                 <th className="px-4 py-3">Fecha</th>
@@ -232,23 +232,23 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
             </thead>
             <tbody>
               {emails.map((email) => (
-                <tr key={email.id} className="border-b border-[#1e253c]/70 transition-colors last:border-0 hover:bg-[#1e253c]/50">
+                <tr key={email.id} className="border-b border-line transition-colors last:border-0 hover:bg-surface-sunken">
                   <td className="max-w-[320px] px-4 py-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#1e253c] text-[#60a5fa]">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-accent">
                         <Mail size={15} />
                       </div>
-                      <p className="truncate text-sm font-semibold text-white">{email.subject}</p>
+                      <p className="truncate text-sm font-semibold text-ink">{email.subject}</p>
                     </div>
                   </td>
                   <td className="max-w-[220px] px-4 py-3">
-                    <p className="truncate text-xs font-medium text-slate-300">{email.sender}</p>
+                    <p className="truncate text-xs font-medium text-ink-soft">{email.sender}</p>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-400">{formatEmailDate(email.email_date)}</td>
+                  <td className="px-4 py-3 text-xs text-ink-soft">{formatEmailDate(email.email_date)}</td>
                   <td className="px-4 py-3">
                     <span className={clsx(
                       "rounded-full px-2.5 py-1 text-[10px] font-bold",
-                      email.status === 'Enviado' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-[#f59e0b]/10 text-[#f59e0b]',
+                      email.status === 'Enviado' ? 'bg-positive-soft text-positive-ink' : 'bg-caution-soft text-caution-ink',
                     )}>
                       {email.status}
                     </span>
@@ -259,7 +259,7 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                         type="button"
                         onClick={() => openOutlookLink(email.outlook_link)}
                         disabled={!email.outlook_link}
-                        className="flex h-9 items-center gap-1.5 rounded-lg border border-[#2a334e] px-2.5 text-xs text-slate-300 transition-colors hover:border-[#506ff0]/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink-soft transition-colors hover:border-accent hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ExternalLink size={13} />
                         Abrir en Outlook
@@ -267,7 +267,7 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                       <button
                         type="button"
                         onClick={() => openEditModal(email)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink"
                         aria-label="Editar correo"
                       >
                         <Pencil size={14} />
@@ -278,8 +278,8 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                           void handleDeleteEmail(email.id);
                         }}
                         className={clsx(
-                          "flex h-9 items-center justify-center rounded-lg border px-2 text-slate-400 transition-colors hover:bg-[#ef4444]/10 hover:text-[#ef4444]",
-                          confirmDeleteId === email.id ? "border-[#ef4444]/50 bg-[#ef4444]/10 text-[#ef4444]" : "border-transparent",
+                          "flex h-9 items-center justify-center rounded-lg border px-2 text-ink-soft transition-colors hover:bg-critical-soft hover:text-critical-ink",
+                          confirmDeleteId === email.id ? "border-critical/30 bg-critical-soft text-critical-ink" : "border-transparent",
                         )}
                         aria-label="Eliminar correo"
                       >
@@ -293,9 +293,9 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
           </table>
           {emails.length === 0 && (
             <div className="flex min-h-[190px] flex-col items-center justify-center px-6 py-10 text-center">
-              <Mail className="mb-3 text-slate-500" size={26} />
-              <p className="text-sm font-semibold text-white">Sin correos registrados</p>
-              <p className="mt-1 max-w-md text-xs leading-relaxed text-slate-500">
+              <Mail className="mb-3 text-ink-faint" size={26} />
+              <p className="text-sm font-semibold text-ink">Sin correos registrados</p>
+              <p className="mt-1 max-w-md text-xs leading-relaxed text-ink-faint">
                 Agrega manualmente los correos relevantes para esta tarea matriz.
               </p>
             </div>
@@ -304,19 +304,19 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
 
         <div className="flex max-h-[380px] flex-col gap-3 overflow-y-auto md:hidden scrollbar-hide">
           {emails.map((email) => (
-            <article key={email.id} className="rounded-xl border border-[#1e253c] bg-[#121827]/80 p-3">
+            <article key={email.id} className="rounded-xl border border-line bg-surface-muted p-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#1e253c] text-[#60a5fa]">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-surface-sunken text-accent">
                   <Mail size={15} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-sm font-semibold text-white">{email.subject}</p>
-                  <p className="mt-1 truncate text-xs text-slate-400">{email.sender}</p>
+                  <p className="line-clamp-2 text-sm font-semibold text-ink">{email.subject}</p>
+                  <p className="mt-1 truncate text-xs text-ink-soft">{email.sender}</p>
                   <div className="mt-3 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500">{formatEmailDate(email.email_date)}</span>
+                    <span className="text-[10px] text-ink-faint">{formatEmailDate(email.email_date)}</span>
                     <span className={clsx(
                       "rounded-full px-2 py-1 text-[10px] font-bold",
-                      email.status === 'Enviado' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-[#f59e0b]/10 text-[#f59e0b]',
+                      email.status === 'Enviado' ? 'bg-positive-soft text-positive-ink' : 'bg-caution-soft text-caution-ink',
                     )}>
                       {email.status}
                     </span>
@@ -326,12 +326,12 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                       type="button"
                       onClick={() => openOutlookLink(email.outlook_link)}
                       disabled={!email.outlook_link}
-                      className="flex h-9 items-center gap-1.5 rounded-lg border border-[#2a334e] px-2.5 text-xs text-slate-300 disabled:opacity-40"
+                      className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink-soft disabled:opacity-40"
                     >
                       <ExternalLink size={13} />
                       Abrir en Outlook
                     </button>
-                    <button type="button" onClick={() => openEditModal(email)} className="flex h-9 items-center gap-1.5 rounded-lg border border-[#2a334e] px-2.5 text-xs text-slate-300">
+                    <button type="button" onClick={() => openEditModal(email)} className="flex h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-ink-soft">
                       <Pencil size={13} />
                       Editar
                     </button>
@@ -341,8 +341,8 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                         void handleDeleteEmail(email.id);
                       }}
                       className={clsx(
-                        "flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs text-slate-300",
-                        confirmDeleteId === email.id ? "border-[#ef4444]/50 bg-[#ef4444]/10 text-[#ef4444]" : "border-[#2a334e]",
+                        "flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs text-ink-soft",
+                        confirmDeleteId === email.id ? "border-critical/30 bg-critical-soft text-critical-ink" : "border-line",
                       )}
                     >
                       <Trash2 size={13} />
@@ -354,7 +354,7 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
             </article>
           ))}
           {emails.length === 0 && (
-            <div className="rounded-xl border border-dashed border-[#2a334e] px-4 py-8 text-center text-sm text-slate-500">
+            <div className="rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-ink-faint">
               Sin correos registrados.
             </div>
           )}
@@ -362,57 +362,57 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#020617]/70 px-4 py-4 backdrop-blur-sm sm:items-center" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 px-4 py-4 backdrop-blur-sm sm:items-center" onClick={closeModal}>
           <form
             onSubmit={handleSaveEmail}
-            className="w-full max-w-lg rounded-2xl border border-[#1e253c] bg-[#0e121e] p-5 shadow-2xl"
+            className="w-full max-w-lg rounded-2xl border border-line bg-surface p-5 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-bold text-white">{editingEmailId ? 'Editar correo' : 'Agregar correo'}</h3>
-                <p className="mt-1 text-sm text-slate-400">{task.title}</p>
+                <h3 className="text-lg font-bold text-ink">{editingEmailId ? 'Editar correo' : 'Agregar correo'}</h3>
+                <p className="mt-1 text-sm text-ink-soft">{task.title}</p>
               </div>
-              <button type="button" onClick={closeModal} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:bg-[#1e253c] hover:text-white">
+              <button type="button" onClick={closeModal} className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-sunken hover:text-ink">
                 <X size={18} />
               </button>
             </div>
 
             <div className="grid gap-4">
               <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-400">Asunto *</span>
+                <span className="mb-1 block text-xs font-medium text-ink-soft">Asunto *</span>
                 <input
                   value={form.subject}
                   onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
-                  className="w-full rounded-lg border border-[#2a334e] bg-[#1e253c] px-4 py-3 text-sm text-white outline-none focus:border-[#506ff0]"
+                  className="w-full rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm text-ink outline-none focus:border-accent"
                   autoFocus
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-400">Remitente</span>
+                <span className="mb-1 block text-xs font-medium text-ink-soft">Remitente</span>
                 <input
                   value={form.sender}
                   onChange={(event) => setForm((current) => ({ ...current, sender: event.target.value }))}
-                  className="w-full rounded-lg border border-[#2a334e] bg-[#1e253c] px-4 py-3 text-sm text-white outline-none focus:border-[#506ff0]"
+                  className="w-full rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm text-ink outline-none focus:border-accent"
                   placeholder="Nombre o correo"
                 />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-slate-400">Fecha *</span>
+                  <span className="mb-1 block text-xs font-medium text-ink-soft">Fecha *</span>
                   <input
                     type="datetime-local"
                     value={form.emailDate}
                     onChange={(event) => setForm((current) => ({ ...current, emailDate: event.target.value }))}
-                    className="w-full rounded-lg border border-[#2a334e] bg-[#1e253c] px-4 py-3 text-sm text-white outline-none focus:border-[#506ff0]"
+                    className="w-full rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm text-ink outline-none focus:border-accent"
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-slate-400">Estado *</span>
+                  <span className="mb-1 block text-xs font-medium text-ink-soft">Estado *</span>
                   <select
                     value={form.status}
                     onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ClientEmailForm['status'] }))}
-                    className="w-full rounded-lg border border-[#2a334e] bg-[#1e253c] px-4 py-3 text-sm text-white outline-none focus:border-[#506ff0]"
+                    className="w-full rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm text-ink outline-none focus:border-accent"
                   >
                     <option value="Recibido">Recibido</option>
                     <option value="Enviado">Enviado</option>
@@ -420,22 +420,22 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
                 </label>
               </div>
               <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-400">Link de Outlook</span>
+                <span className="mb-1 block text-xs font-medium text-ink-soft">Link de Outlook</span>
                 <input
                   type="url"
                   value={form.outlookLink}
                   onChange={(event) => setForm((current) => ({ ...current, outlookLink: event.target.value }))}
-                  className="w-full rounded-lg border border-[#2a334e] bg-[#1e253c] px-4 py-3 text-sm text-white outline-none focus:border-[#506ff0]"
+                  className="w-full rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm text-ink outline-none focus:border-accent"
                   placeholder="https://outlook.office.com/mail/..."
                 />
               </label>
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={closeModal} className="rounded-lg px-4 py-3 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:py-2">
+              <button type="button" onClick={closeModal} className="rounded-lg px-4 py-3 text-sm font-medium text-ink-soft transition-colors hover:text-ink sm:py-2">
                 Cancelar
               </button>
-              <button type="submit" disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-[#506ff0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:opacity-60 sm:py-2">
+              <button type="submit" disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand disabled:opacity-60 sm:py-2">
                 <Check size={16} />
                 {isSaving ? 'Guardando...' : 'Guardar correo'}
               </button>

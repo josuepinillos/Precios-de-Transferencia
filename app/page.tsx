@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect } from 'react';
+import { AlertCircle, X } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { KPICards } from '@/components/KPICards';
@@ -18,34 +19,38 @@ export default function Home() {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen bg-[#0b0f19] items-center justify-center text-white">
+      <div className="flex min-h-screen items-center justify-center bg-canvas">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-sm font-medium">Sincronizando con Supabase...</p>
+          <div className="h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
+          <p className="text-sm text-ink-soft">Sincronizando con Supabase...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0b0f19] text-white overflow-x-hidden">
+    <div className="flex min-h-screen overflow-x-hidden bg-canvas text-ink">
       <Sidebar />
-      <div className="min-w-0 flex-1 flex flex-col overflow-hidden min-h-screen lg:h-screen pt-16 md:pt-0">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16 md:pt-0 lg:h-screen">
         <Header />
         {error && (
-          <div className="mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fecaca] flex items-start justify-between gap-4">
-            <span>{error}</span>
+          <div className="mx-4 mt-4 flex items-start justify-between gap-4 rounded-control border border-critical/25 bg-critical-soft px-4 py-3 text-sm text-critical-ink sm:mx-6 lg:mx-8">
+            <span className="flex min-w-0 items-start gap-2.5">
+              <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+              <span className="min-w-0">{error}</span>
+            </span>
             <button
               type="button"
               onClick={clearError}
-              className="text-[#fecaca]/80 hover:text-white transition-colors"
+              aria-label="Cerrar aviso"
+              className="flex-shrink-0 rounded-md p-0.5 opacity-70 transition-opacity hover:opacity-100"
             >
-              Cerrar
+              <X size={15} />
             </button>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6 scrollbar-hide">
-          <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-4 sm:gap-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 p-4 sm:p-6 lg:gap-6 lg:p-8">
             {currentView === 'timeline' && <KPICards />}
 
             {currentView === 'dashboard' && <DashboardExecutive />}
@@ -59,4 +64,3 @@ export default function Home() {
     </div>
   );
 }
-

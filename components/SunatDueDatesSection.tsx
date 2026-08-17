@@ -1,11 +1,12 @@
 "use client";
 
 import React from 'react';
-import { AlertTriangle, CalendarClock, Check, Edit2, Eye, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, Edit2, Eye, Search, X } from 'lucide-react';
 import clsx from 'clsx';
 import { Task, USERS } from '../data/mockData';
 import { Database, getSupabaseClient } from '../lib/supabase';
 import { useDashboardStore } from '../store/useDashboardStore';
+import { Button } from './ui/Button';
 
 type SunatDueDateRow = Database['public']['Tables']['sunat_due_dates']['Row'];
 type SunatCondition = SunatDueDateRow['condition'];
@@ -82,9 +83,9 @@ const getStatus = (daysRemaining: number): SunatStatus => {
 };
 
 const getStatusClasses = (status: SunatStatus) => {
-  if (status === 'VENCIDO') return 'sunat-status-overdue bg-[#ef4444]/15 text-[#ef4444] border-[#ef4444]/30';
-  if (status === 'ATENCION') return 'sunat-status-warning bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30';
-  return 'sunat-status-ready bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30';
+  if (status === 'VENCIDO') return 'sunat-status-overdue bg-critical-soft text-critical-ink border-critical/30';
+  if (status === 'ATENCION') return 'sunat-status-warning bg-caution-soft text-caution-ink border-caution';
+  return 'sunat-status-ready bg-positive-soft text-positive-ink border-positive';
 };
 
 const getConditionLabel = (condition: SunatCondition) =>
@@ -270,133 +271,116 @@ export const SunatDueDatesSection = () => {
 
   return (
     <section className="sunat-due-dates-section flex flex-col gap-5">
-      <div className="flex flex-col gap-4 border-b border-[#1e253c] pb-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="sunat-header-icon flex h-11 w-11 items-center justify-center rounded-xl border border-[#2a334e] bg-[#1e253c] text-[#506ff0] shadow-lg">
-              <CalendarClock size={20} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Vencimientos SUNAT</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Control de fechas máximas de declaración según último dígito del RUC.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => referenceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="sunat-secondary-button rounded-lg border border-[#2a334e] bg-[#121827] px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:border-[#506ff0]/60 hover:text-white"
-          >
-            Ver calendario
-          </button>
-          <button
-            type="button"
-            onClick={openAssignModal}
-            className="rounded-lg bg-[#506ff0] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-[#6d83ff]"
-          >
-            Asignar RUC
-          </button>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <Button onClick={() => referenceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+          Ver calendario
+        </Button>
+        <Button variant="primary" onClick={openAssignModal}>
+          Asignar RUC
+        </Button>
       </div>
 
-      <div className="sunat-kpi-strip grid overflow-hidden rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          ['Total clientes', kpis.total],
-          ['Vencidos', kpis.overdue],
-          ['Vencen en ≤ 7 días', kpis.le7],
-          ['Vencen en ≤ 15 días', kpis.le15],
-          ['Más de 15 días', kpis.gt15],
-        ].map(([label, value]) => (
-          <div key={label} className="sunat-kpi-cell border-b border-[#1e253c] px-4 py-3 last:border-b-0 sm:border-r sm:last:border-r-0 lg:border-b-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-            <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <div className="card grid overflow-hidden sm:grid-cols-2 lg:grid-cols-5">
+        {([
+          ['Total clientes', kpis.total, 'neutral'],
+          ['Vencidos', kpis.overdue, 'critical'],
+          ['Vencen en ≤ 7 días', kpis.le7, 'caution'],
+          ['Vencen en ≤ 15 días', kpis.le15, 'caution'],
+          ['Más de 15 días', kpis.gt15, 'positive'],
+        ] as const).map(([label, value, tone]) => (
+          <div key={label} className="border-b border-line px-4 py-4 last:border-b-0 sm:border-r sm:last:border-r-0 lg:border-b-0">
+            <p className="text-[13px] font-medium text-ink-soft">{label}</p>
+            <p
+              className={clsx(
+                'mt-2 text-[26px] font-semibold leading-none tracking-[-0.02em] tabular',
+                value === 0 ? 'text-ink-faint' : tone === 'critical' ? 'text-critical-ink' : tone === 'caution' ? 'text-caution-ink' : 'text-ink',
+              )}
+            >
+              {value}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="sunat-table-shell rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-3 sm:p-4">
+      <div className="sunat-table-shell rounded-2xl border border-line bg-surface p-3 sm:p-4">
         <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(240px,1.2fr)_repeat(5,minmax(150px,1fr))]">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar cliente o RUC..."
-              className="w-full rounded-lg border border-[#1e253c] bg-[#121827] py-2.5 pl-9 pr-3 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-[#506ff0]"
+              className="w-full rounded-lg border border-line bg-surface-muted py-2.5 pl-9 pr-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-accent"
             />
           </div>
 
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | SunatStatus)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | SunatStatus)} className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-sm text-ink outline-none focus:border-accent">
             <option value="all">Todos los estados</option>
             <option value="VENCIDO">Vencido</option>
             <option value="ATENCION">Atención</option>
             <option value="A TIEMPO">A tiempo</option>
           </select>
 
-          <select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+          <select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-sm text-ink outline-none focus:border-accent">
             <option value="all">Todos los responsables</option>
             {TEAM_MEMBERS.map((member) => (
               <option key={member.name} value={member.name}>{member.name}</option>
             ))}
           </select>
 
-          <select value={conditionFilter} onChange={(event) => setConditionFilter(event.target.value as 'all' | SunatCondition)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+          <select value={conditionFilter} onChange={(event) => setConditionFilter(event.target.value as 'all' | SunatCondition)} className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-sm text-ink outline-none focus:border-accent">
             <option value="all">Todas las condiciones</option>
             <option value="general">Régimen General</option>
             <option value="good_taxpayer">Buen Contribuyente</option>
           </select>
 
-          <select value={rangeFilter} onChange={(event) => setRangeFilter(event.target.value as RangeFilter)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+          <select value={rangeFilter} onChange={(event) => setRangeFilter(event.target.value as RangeFilter)} className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-sm text-ink outline-none focus:border-accent">
             <option value="all">Todos los rangos</option>
             <option value="overdue">Vencidos</option>
             <option value="le7">≤ 7 días</option>
             <option value="le15">≤ 15 días</option>
             <option value="gt15">Más de 15 días</option>
           </select>
-          <select value={dueDateSort} onChange={(event) => setDueDateSort(event.target.value as DueDateSort)} className="rounded-lg border border-[#1e253c] bg-[#121827] px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+          <select value={dueDateSort} onChange={(event) => setDueDateSort(event.target.value as DueDateSort)} className="rounded-lg border border-line bg-surface-muted px-3 py-2.5 text-sm text-ink outline-none focus:border-accent">
             <option value="asc">↑ Fecha mÃ¡xima</option>
             <option value="desc">↓ Fecha mÃ¡xima</option>
           </select>
         </div>
 
-        <div className="sunat-table-wrap overflow-x-auto rounded-xl border border-[#1e253c] scrollbar-hide">
+        <div className="sunat-table-wrap overflow-x-auto rounded-xl border border-line scrollbar-hide">
           <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
-            <thead className="sunat-table-header bg-[#121827] text-xs uppercase tracking-wide text-slate-500">
+            <thead className="sunat-table-header bg-surface-muted text-xs uppercase tracking-wide text-ink-faint">
               <tr>
                 {['Cliente', 'RUC', 'Últ. Dígito', 'Condición', 'Fecha Máxima', 'Días Restantes', 'Estado', 'Progreso', 'Responsable', 'Acciones'].map((header) => (
-                  <th key={header} className="border-b border-[#1e253c] px-4 py-3 font-semibold">{header}</th>
+                  <th key={header} className="border-b border-line px-4 py-3 font-semibold">{header}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="sunat-table-body divide-y divide-[#1e253c]">
               {isLoading && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">Cargando vencimientos...</td>
+                  <td colSpan={10} className="px-4 py-8 text-center text-ink-soft">Cargando vencimientos...</td>
                 </tr>
               )}
               {!isLoading && filteredRecords.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-slate-400">No hay vencimientos SUNAT para los filtros seleccionados.</td>
+                  <td colSpan={10} className="px-4 py-8 text-center text-ink-soft">No hay vencimientos SUNAT para los filtros seleccionados.</td>
                 </tr>
               )}
               {!isLoading && filteredRecords.map((record) => (
-                <tr key={record.id} className="sunat-table-row bg-[#0e121e]/30 transition-colors hover:bg-[#1e253c]/35">
+                <tr key={record.id} className="sunat-table-row bg-surface transition-colors hover:bg-surface-sunken">
                   <td className="px-4 py-5">
-                    <span className="font-semibold text-white">{record.task.title}</span>
+                    <span className="font-semibold text-ink">{record.task.title}</span>
                   </td>
-                  <td className="px-4 py-5 font-mono text-slate-200">{record.ruc}</td>
+                  <td className="px-4 py-5 font-mono text-ink">{record.ruc}</td>
                   <td className="px-4 py-5">
-                    <span className="sunat-last-digit-badge inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#506ff0]/35 bg-[#506ff0]/10 px-2 text-xs font-bold text-[#8ba0ff]">
+                    <span className="sunat-last-digit-badge inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-accent bg-accent-soft px-2 text-xs font-bold text-accent">
                       {record.lastDigit}
                     </span>
                   </td>
-                  <td className="px-4 py-5 text-slate-300">{getConditionLabel(record.condition)}</td>
-                  <td className="px-4 py-5 font-semibold text-white">{formatSunatDate(record.dueDate)}</td>
-                  <td className="px-4 py-4 text-slate-300">{record.daysRemaining} días</td>
+                  <td className="px-4 py-5 text-ink-soft">{getConditionLabel(record.condition)}</td>
+                  <td className="px-4 py-5 font-semibold text-ink">{formatSunatDate(record.dueDate)}</td>
+                  <td className="px-4 py-4 text-ink-soft">{record.daysRemaining} días</td>
                   <td className="px-4 py-5">
                     <span className={clsx("inline-flex rounded-full border px-2.5 py-1 text-xs font-bold", getStatusClasses(record.status))}>
                       {record.status}
@@ -404,21 +388,21 @@ export const SunatDueDatesSection = () => {
                   </td>
                   <td className="px-4 py-5">
                     <div className="flex min-w-[140px] items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#1e253c]">
-                        <div className="h-full rounded-full bg-[#506ff0]" style={{ width: `${record.progress}%` }} />
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken">
+                        <div className="h-full rounded-full bg-accent" style={{ width: `${record.progress}%` }} />
                       </div>
-                      <span className="w-9 text-right text-xs font-semibold text-slate-200">{record.progress}%</span>
+                      <span className="w-9 text-right text-xs font-semibold text-ink">{record.progress}%</span>
                     </div>
                   </td>
                   <td className="px-4 py-5">
-                    <span className="text-slate-300">{record.task.assignee.name}</span>
+                    <span className="text-ink-soft">{record.task.assignee.name}</span>
                   </td>
                   <td className="px-4 py-5">
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => showDetail(record.task_id)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white" title="Ver detalle">
+                      <button type="button" onClick={() => showDetail(record.task_id)} className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink" title="Ver detalle">
                         <Eye size={15} />
                       </button>
-                      <button type="button" onClick={() => openEditModal(record)} className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white" title="Editar RUC">
+                      <button type="button" onClick={() => openEditModal(record)} className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink" title="Editar RUC">
                         <Edit2 size={15} />
                       </button>
                     </div>
@@ -430,21 +414,21 @@ export const SunatDueDatesSection = () => {
         </div>
       </div>
 
-      <div ref={referenceRef} className="rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4">
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-white">Cronograma ejercicio 2025</h3>
+      <div ref={referenceRef} className="rounded-2xl border border-line bg-surface p-4">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-ink">Cronograma ejercicio 2025</h3>
         <div className="overflow-x-auto scrollbar-hide">
           <table className="min-w-[720px] w-full border-collapse text-center text-sm">
             <tbody>
-              <tr className="bg-[#121827] text-xs uppercase tracking-wide text-slate-500">
-                <th className="border border-[#1e253c] px-3 py-2 text-left">Último dígito</th>
+              <tr className="bg-surface-muted text-xs uppercase tracking-wide text-ink-faint">
+                <th className="border border-line px-3 py-2 text-left">Último dígito</th>
                 {['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'BC'].map((digit) => (
-                  <td key={digit} className="border border-[#1e253c] px-3 py-2 font-semibold">{digit}</td>
+                  <td key={digit} className="border border-line px-3 py-2 font-semibold">{digit}</td>
                 ))}
               </tr>
-              <tr className="text-slate-300">
-                <th className="border border-[#1e253c] px-3 py-2 text-left text-xs uppercase tracking-wide text-slate-500">Fecha máxima</th>
+              <tr className="text-ink-soft">
+                <th className="border border-line px-3 py-2 text-left text-xs uppercase tracking-wide text-ink-faint">Fecha máxima</th>
                 {['15 Jun', '16 Jun', '17 Jun', '17 Jun', '18 Jun', '18 Jun', '19 Jun', '19 Jun', '22 Jun', '22 Jun', '23 Jun'].map((date, index) => (
-                  <td key={`${date}-${index}`} className="border border-[#1e253c] px-3 py-2">{date}</td>
+                  <td key={`${date}-${index}`} className="border border-line px-3 py-2">{date}</td>
                 ))}
               </tr>
             </tbody>
@@ -453,20 +437,20 @@ export const SunatDueDatesSection = () => {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#020617]/70 px-4 py-4 backdrop-blur-sm sm:items-center" onClick={() => setIsModalOpen(false)}>
-          <form onSubmit={handleSave} className="w-full max-w-lg rounded-2xl border border-[#1e253c] bg-[#0e121e] p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 px-4 py-4 backdrop-blur-sm sm:items-center" onClick={() => setIsModalOpen(false)}>
+          <form onSubmit={handleSave} className="w-full max-w-lg rounded-2xl border border-line bg-surface p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-bold text-white">{editingTaskId ? 'Editar RUC' : 'Asignar RUC'}</h3>
-                <p className="mt-1 text-sm text-slate-400">Registra el RUC del cliente y su condición SUNAT.</p>
+                <h3 className="text-lg font-bold text-ink">{editingTaskId ? 'Editar RUC' : 'Asignar RUC'}</h3>
+                <p className="mt-1 text-sm text-ink-soft">Registra el RUC del cliente y su condición SUNAT.</p>
               </div>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-[#1e253c] hover:text-white">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-surface-sunken hover:text-ink">
                 <X size={18} />
               </button>
             </div>
 
             {modalError && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fecaca]">
+              <div className="mb-4 flex items-start gap-2 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-sm text-critical-ink">
                 <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
                 <span>{modalError}</span>
               </div>
@@ -474,8 +458,8 @@ export const SunatDueDatesSection = () => {
 
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-slate-400">Cliente</span>
-                <select value={taskId} onChange={(event) => setTaskId(event.target.value)} disabled={Boolean(editingTaskId)} className="rounded-lg border border-[#2a334e] bg-[#121827] px-3 py-3 text-sm text-slate-200 outline-none focus:border-[#506ff0] disabled:opacity-60">
+                <span className="text-xs font-medium text-ink-soft">Cliente</span>
+                <select value={taskId} onChange={(event) => setTaskId(event.target.value)} disabled={Boolean(editingTaskId)} className="rounded-lg border border-line bg-surface-muted px-3 py-3 text-sm text-ink outline-none focus:border-accent disabled:opacity-60">
                   <option value="">Seleccionar cliente</option>
                   {tasks.map((task) => (
                     <option key={task.id} value={task.id}>{task.title}</option>
@@ -484,19 +468,19 @@ export const SunatDueDatesSection = () => {
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-slate-400">RUC</span>
+                <span className="text-xs font-medium text-ink-soft">RUC</span>
                 <input
                   value={ruc}
                   onChange={(event) => setRuc(event.target.value.replace(/\D/g, '').slice(0, 11))}
                   inputMode="numeric"
                   placeholder="Ingrese 11 dígitos"
-                  className="rounded-lg border border-[#2a334e] bg-[#121827] px-3 py-3 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-[#506ff0]"
+                  className="rounded-lg border border-line bg-surface-muted px-3 py-3 text-sm text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-accent"
                 />
               </label>
 
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-slate-400">Condición</span>
-                <select value={condition} onChange={(event) => setCondition(event.target.value as SunatCondition)} className="rounded-lg border border-[#2a334e] bg-[#121827] px-3 py-3 text-sm text-slate-200 outline-none focus:border-[#506ff0]">
+                <span className="text-xs font-medium text-ink-soft">Condición</span>
+                <select value={condition} onChange={(event) => setCondition(event.target.value as SunatCondition)} className="rounded-lg border border-line bg-surface-muted px-3 py-3 text-sm text-ink outline-none focus:border-accent">
                   <option value="general">Régimen General</option>
                   <option value="good_taxpayer">Buen Contribuyente</option>
                 </select>
@@ -504,8 +488,8 @@ export const SunatDueDatesSection = () => {
             </div>
 
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg px-4 py-3 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:py-2">Cancelar</button>
-              <button type="submit" disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-[#506ff0] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#6d83ff] disabled:cursor-not-allowed disabled:opacity-60 sm:py-2">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg px-4 py-3 text-sm font-medium text-ink-soft transition-colors hover:text-ink sm:py-2">Cancelar</button>
+              <button type="submit" disabled={isSaving} className="flex items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand disabled:cursor-not-allowed disabled:opacity-60 sm:py-2">
                 <Check size={16} />
                 {isSaving ? 'Guardando...' : 'Guardar'}
               </button>

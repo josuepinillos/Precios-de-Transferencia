@@ -2,11 +2,17 @@
 
 import React, { useState } from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
-import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import { getCalendarDays, getTodayDateKey, isBeforeDateKey } from '../lib/date';
 
 const DAYS_OF_WEEK = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
+
+const LEGEND = [
+  { label: 'Completadas', dot: 'bg-positive' },
+  { label: 'En progreso', dot: 'bg-caution' },
+  { label: 'Pendientes', dot: 'bg-line-strong' },
+  { label: 'Vencidas', dot: 'bg-critical' },
+];
 
 interface CalendarGridProps {
   displayedMonth: Date;
@@ -23,12 +29,12 @@ export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps
 
   const getTaskStatusColor = (taskId: string, dateBlock: string) => {
     const progress = getTaskProgress(taskId);
-    if (progress === 100) return 'bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]'; // Green
-    if (progress > 0) return 'bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.5)]'; // Yellow
-    
-    if (isBeforeDateKey(dateBlock, todayDateKey)) return 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)]'; // Red
-    
-    return 'bg-[#8b5cf6] shadow-[0_0_8px_rgba(139,92,246,0.5)]'; // Purple
+    if (progress === 100) return 'bg-positive';
+    if (progress > 0) return 'bg-caution';
+
+    if (isBeforeDateKey(dateBlock, todayDateKey)) return 'bg-critical';
+
+    return 'bg-line-strong';
   };
 
   const getTasksForDate = (dateString: string) => {
@@ -70,18 +76,18 @@ export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps
   };
 
   return (
-    <div className="bg-[#0e121e]/80 backdrop-blur-xl border border-[#1e253c] rounded-2xl p-3 sm:p-4 lg:p-6 h-auto min-h-[520px] xl:h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-7 mb-3 sm:mb-4">
+    <div className="card flex h-auto min-h-[520px] flex-col overflow-hidden p-3 sm:p-4 lg:p-5 xl:h-full">
+      {/* Weekday header */}
+      <div className="mb-2 grid grid-cols-7">
         {DAYS_OF_WEEK.map(day => (
-          <div key={day} className="text-center text-[10px] sm:text-xs font-semibold text-slate-400 tracking-wider">
+          <div key={day} className="pb-2 text-center text-[11px] font-medium tracking-wide text-ink-faint">
             {day}
           </div>
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1.5 sm:gap-2 lg:gap-3">
+      {/* Day grid */}
+      <div className="grid flex-1 grid-cols-7 grid-rows-6 gap-1 sm:gap-1.5">
         {calendarDays.map((dayInfo) => {
           const dayTasks = getTasksForDate(dayInfo.dateKey);
           const isSelected = currentDate === dayInfo.dateKey;
@@ -89,9 +95,8 @@ export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps
           const isDropTarget = dropTargetDate === dayInfo.dateKey;
 
           return (
-            <motion.div 
+            <div
               key={dayInfo.dateKey}
-              whileHover={{ scale: 1.02 }}
               onDragOver={(event) => {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'move';
@@ -107,91 +112,79 @@ export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps
               }}
               onClick={() => onSelectDate(dayInfo.dateKey)}
               className={clsx(
-                `
-                relative rounded-lg sm:rounded-xl p-1.5 sm:p-2 lg:p-3 min-h-[88px] sm:min-h-[104px] flex flex-col cursor-pointer transition-colors
-                ${isSelected ? 'bg-gradient-to-br from-[#1e253c] to-[#2a334e] border border-[#506ff0]/50 shadow-[0_0_15px_rgba(80,111,240,0.15)]' : 'bg-[#121827] border border-[#1e253c] hover:border-[#2a334e]'}
-                ${!dayInfo.isCurrentMonth ? 'opacity-50' : ''}
-              `,
-                isDropTarget && 'border-[#506ff0] bg-[#506ff0]/10 shadow-[0_0_20px_rgba(80,111,240,0.22)]',
+                'relative flex min-h-[86px] cursor-pointer flex-col rounded-[10px] border p-1.5 transition-colors duration-150 sm:min-h-[100px] sm:p-2',
+                isSelected
+                  ? 'border-accent bg-accent-soft'
+                  : 'border-transparent bg-surface-muted hover:border-line-strong',
+                isDropTarget && 'border-accent bg-accent-soft',
+                !dayInfo.isCurrentMonth && 'opacity-45',
               )}
             >
-              <div className="flex justify-between items-start mb-2">
-                <span className={`text-sm sm:text-base lg:text-lg font-bold ${isToday ? 'text-white' : 'text-slate-300'}`}>
+              <div className="mb-1 flex items-start justify-between">
+                <span
+                  className={clsx(
+                    'flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[13px] tabular',
+                    isToday
+                      ? 'bg-brand font-semibold text-white'
+                      : isSelected
+                        ? 'font-semibold text-accent-ink'
+                        : 'font-medium text-ink-soft',
+                  )}
+                >
                   {dayInfo.day}
                 </span>
-                {isToday && (
-                  <span className="text-[9px] sm:text-[10px] font-bold text-[#506ff0] uppercase tracking-wider">
-                    {dayInfo.month}
-                  </span>
-                )}
-                {isSelected && !isToday && (
-                  <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {dayInfo.month}
-                  </span>
+                {dayTasks.length > 0 && (
+                  <span className="text-[10px] font-medium tabular text-ink-faint">{dayTasks.length}</span>
                 )}
               </div>
 
               {dayTasks.length > 0 && (
-                <div className="mt-auto">
-                  <div className="text-[10px] sm:text-xs text-slate-400 mb-2 leading-tight">
-                    {dayTasks.length} {dayTasks.length === 1 ? 'tarea' : 'tareas'}
-                  </div>
-                  <div className="flex max-h-[70px] flex-col gap-1.5 overflow-y-auto scrollbar-hide">
-                    {dayTasks.map(task => (
-                      <button
-                        key={task.id}
-                        type="button"
-                        draggable
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelectDate(dayInfo.dateKey);
-                        }}
-                        onDragStart={(event) => handleDragStart(event, task.id)}
-                        onDragEnd={() => {
-                          setDraggedTaskId(null);
-                          setDropTargetDate(null);
-                        }}
-                        className={clsx(
-                          "flex min-w-0 items-center gap-1.5 rounded-md border border-[#1e253c] bg-[#0e121e]/70 px-1.5 py-1 text-left text-[10px] text-slate-300 transition-all hover:border-[#506ff0]/60 cursor-grab active:cursor-grabbing",
-                          draggedTaskId === task.id && "opacity-60 border-[#8b5cf6] shadow-[0_0_14px_rgba(139,92,246,0.22)]",
-                        )}
-                        title={task.title}
-                      >
-                        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${getTaskStatusColor(task.id, task.dateBlock)}`} />
-                        <span className="hidden min-w-0 truncate sm:block">{task.title}</span>
-                      </button>
-                    ))}
-                  </div>
+                <div className="mt-auto flex max-h-[64px] flex-col gap-1 overflow-y-auto scrollbar-hide">
+                  {dayTasks.map(task => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      draggable
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectDate(dayInfo.dateKey);
+                      }}
+                      onDragStart={(event) => handleDragStart(event, task.id)}
+                      onDragEnd={() => {
+                        setDraggedTaskId(null);
+                        setDropTargetDate(null);
+                      }}
+                      className={clsx(
+                        'flex min-w-0 cursor-grab items-center gap-1.5 rounded-md bg-surface px-1.5 py-1 text-left text-[10px] text-ink-soft shadow-card transition-colors hover:text-ink active:cursor-grabbing',
+                        draggedTaskId === task.id && 'opacity-55',
+                      )}
+                      title={task.title}
+                    >
+                      <span className={clsx('h-1.5 w-1.5 flex-shrink-0 rounded-full', getTaskStatusColor(task.id, task.dateBlock))} />
+                      <span className="hidden min-w-0 truncate sm:block">{task.title}</span>
+                    </button>
+                  ))}
                 </div>
               )}
+
               {isDropTarget && dayTasks.length === 0 && (
-                <div className="mt-auto rounded-lg border border-dashed border-[#506ff0]/60 bg-[#506ff0]/10 px-2 py-2 text-center text-[10px] text-[#93c5fd]">
+                <div className="mt-auto rounded-md border border-dashed border-accent px-1 py-1.5 text-center text-[10px] text-accent-ink">
                   Soltar aquí
                 </div>
               )}
-            </motion.div>
+            </div>
           );
         })}
       </div>
-      
+
       {/* Legend */}
-      <div className="mt-4 sm:mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-5 lg:gap-8 text-xs sm:text-sm text-slate-400">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-          <span>Completadas</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.5)]"></div>
-          <span>En progreso</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#8b5cf6] shadow-[0_0_8px_rgba(139,92,246,0.5)]"></div>
-          <span>Pendientes</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
-          <span>Vencidas</span>
-        </div>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-4 text-xs text-ink-soft">
+        {LEGEND.map((item) => (
+          <div key={item.label} className="flex items-center gap-2">
+            <span className={clsx('h-2 w-2 rounded-full', item.dot)} />
+            <span>{item.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

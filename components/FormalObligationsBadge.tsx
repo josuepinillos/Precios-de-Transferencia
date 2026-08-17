@@ -129,23 +129,24 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
   const obligation = getObligation(totalPen);
 
   return (
-    <div className="formal-obligations-module flex h-full w-full flex-col justify-between rounded-2xl border border-[#1e253c] bg-[#0e121e]/50 p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="formal-obligations-module panel flex h-full w-full flex-col justify-between p-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-            <FileCheck2 size={15} className="text-[#8b5cf6]" />
+          <div className="eyebrow flex items-center gap-2">
+            <FileCheck2 size={14} className="text-ink-faint" />
             Obligaciones formales
-            {isLoading && <RefreshCw size={12} className="animate-spin text-slate-500" />}
+            {isLoading && <RefreshCw size={12} className="animate-spin text-ink-faint" />}
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {obligation.annexes.map((annex) => (
               <span
                 key={annex}
                 className={clsx(
-                  'formal-obligation-badge inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold',
-                  obligation.level === 'none' && 'formal-obligation-badge-none border-slate-600/40 bg-slate-500/10 text-slate-300',
-                  obligation.level === 'annex-i' && 'formal-obligation-badge-annex-i border-[#3b82f6]/40 bg-[#3b82f6]/10 text-[#93c5fd]',
-                  obligation.level === 'annex-i-iv' && 'formal-obligation-badge-annex-iv border-[#8b5cf6]/40 bg-[#8b5cf6]/10 text-[#c4b5fd]',
+                  'formal-obligation-badge inline-flex items-center gap-1 rounded-pill px-2.5 py-1 text-[11px] font-medium',
+                  // Escalating weight: none < Annex I < Annex I+IV
+                  obligation.level === 'none' && 'formal-obligation-badge-none bg-neutral-soft text-neutral-ink',
+                  obligation.level === 'annex-i' && 'formal-obligation-badge-annex-i bg-accent-soft text-accent-ink',
+                  obligation.level === 'annex-i-iv' && 'formal-obligation-badge-annex-iv bg-caution-soft text-caution-ink',
                 )}
               >
                 {obligation.level !== 'none' && <CheckCircle2 size={12} />}
@@ -155,20 +156,20 @@ export const FormalObligationsBadge = ({ task }: FormalObligationsBadgeProps) =>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 text-xs md:min-w-[180px]">
+        <div className="grid grid-cols-1 gap-2 text-xs md:min-w-[170px]">
           <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-500">Total operaciones</span>
-            <span className="font-bold text-white">{formatPen(totalPen)}</span>
+            <span className="text-ink-soft">Total operaciones</span>
+            <span className="font-semibold tabular text-ink">{formatPen(totalPen)}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-500">Obligación</span>
-            <span className="font-bold text-white">{obligation.label}</span>
+            <span className="text-ink-soft">Obligación</span>
+            <span className="font-semibold text-ink">{obligation.label}</span>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-2 text-xs text-[#fecaca]">
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
           <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
