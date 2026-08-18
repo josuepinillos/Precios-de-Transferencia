@@ -3,15 +3,32 @@
 -- ============================================================================
 -- EJECUTAR EN EL SQL EDITOR DE SUPABASE.
 --
--- ORDEN DE PUESTA EN MARCHA (importante):
+-- QUE NO HACE: no borra tablas, ni columnas, ni filas. No hay drop table,
+-- drop column, truncate ni delete. Ninguna fila existente se modifica.
+--
+-- QUE SI CAMBIA, Y ES IRREVERSIBLE EN CALIENTE: retira el acceso del rol anon
+-- a las seis tablas de negocio. Hoy la aplicacion lee con la anon key, asi que
+-- DESDE EL SEGUNDO EN QUE ESTO SE EJECUTA Y HASTA COMPLETAR EL PASO 4 LA
+-- APLICACION NO PODRA LEER DATOS. Reserva ~10 minutos y haz los cuatro pasos
+-- seguidos.
+--
+-- ORDEN DE PUESTA EN MARCHA:
 --   1. Ejecutar este archivo completo.
---   2. Crear el primer usuario en Authentication > Users (Add user).
---   3. Marcarlo como administrador:
+--   2. Crear el primer usuario en Authentication > Users > Add user,
+--      marcando "Auto Confirm User".
+--   3. Promoverlo a administrador y comprobar que quedo bien:
 --        update public.profiles set role = 'admin', is_active = true
 --        where email = 'tu-correo@dominio.com';
---   4. Recién entonces poner NEXT_PUBLIC_AUTH_ENABLED=true en el entorno.
+--        select email, role, is_active from public.profiles;
+--      Si esa consulta no devuelve ninguna fila, el trigger no llego a crear
+--      el perfil: crealo a mano copiando el id desde Authentication > Users.
+--   4. Poner NEXT_PUBLIC_AUTH_ENABLED=true en Vercel y en .env.local, y
+--      redesplegar.
 --
--- Este archivo SUSTITUYE las políticas "Allow public ..." de schema.sql, que
+-- PARA VOLVER ATRAS: al final del archivo hay un bloque de reversion comentado
+-- que devuelve el acceso publico tal como esta hoy.
+--
+-- Este archivo SUSTITUYE las politicas "Allow public ..." de schema.sql, que
 -- daban CRUD completo al rol anon sobre datos tributarios de clientes.
 -- ============================================================================
 
@@ -31,11 +48,18 @@ create table if not exists public.profiles (
   email text not null,
   avatar_url text,
   role public.app_role not null default 'lector',
-  is_active boolean not null default true,
+  is_active boolean not null default false,
   last_sign_in_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Se blinda aquí mismo, no al final del archivo: Supabase concede por
+-- defecto privilegios sobre las tablas nuevas de public a anon, así que entre
+-- la creación y el enable de RLS habría una ventana abierta si el script
+-- fallara a mitad de camino.
+alter table public.profiles enable row level security;
+revoke all on table public.profiles from anon;
 
 create index if not exists profiles_email_idx on public.profiles (email);
 create index if not exists profiles_role_idx on public.profiles (role);
@@ -49,14 +73,26 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name, is_active)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1)),
-    false
-  )
-  on conflict (id) do nothing;
+  -- Este trigger corre dentro del INSERT de auth.users: si lanza una
+  -- excepción, la creación del usuario se aborta por completo. Se aísla para
+  -- que un problema al crear el perfil nunca impida dar de alta a alguien.
+  begin
+    insert into public.profiles (id, email, full_name, is_active)
+    values (
+      new.id,
+      coalesce(new.email, ''),
+      coalesce(
+        new.raw_user_meta_data ->> 'full_name',
+        nullif(split_part(coalesce(new.email, ''), '@', 1), '')
+      ),
+      false
+    )
+    on conflict (id) do nothing;
+  exception
+    when others then
+      raise warning 'No se pudo crear el perfil de %: %', new.id, sqlerrm;
+  end;
+
   return new;
 end;
 $$;
@@ -100,6 +136,30 @@ as $$
   select coalesce(public.current_app_role() in ('admin', 'editor'), false);
 $$;
 
+-- Rol y estado tal como están guardados, sin filtrar por is_active. Existen
+-- para que las políticas SOBRE profiles no consulten profiles en línea: una
+-- subconsulta a la misma tabla dentro de su propia política provoca
+-- "infinite recursion detected in policy for relation profiles".
+create or replace function public.my_role()
+returns public.app_role
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+create or replace function public.my_is_active()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select is_active from public.profiles where id = auth.uid();
+$$;
+
 -- Puede leer: cualquier perfil activo, sea cual sea su rol.
 create or replace function public.can_read()
 returns boolean
@@ -110,6 +170,21 @@ set search_path = public
 as $$
   select public.current_app_role() is not null;
 $$;
+
+-- Los helpers devuelven null/false para una sesión anónima, pero no hay razón
+-- para dejarlos expuestos: solo los necesita una sesión autenticada.
+revoke execute on function public.current_app_role() from public, anon;
+revoke execute on function public.my_role()          from public, anon;
+revoke execute on function public.my_is_active()     from public, anon;
+revoke execute on function public.is_admin()         from public, anon;
+revoke execute on function public.can_write()        from public, anon;
+revoke execute on function public.can_read()         from public, anon;
+grant execute on function public.current_app_role() to authenticated;
+grant execute on function public.my_role()          to authenticated;
+grant execute on function public.my_is_active()     to authenticated;
+grant execute on function public.is_admin()         to authenticated;
+grant execute on function public.can_write()        to authenticated;
+grant execute on function public.can_read()         to authenticated;
 
 -- ------------------------------------------------------------ auditoría ----
 create table if not exists public.audit_log (
@@ -123,6 +198,9 @@ create table if not exists public.audit_log (
   new_data jsonb,
   created_at timestamptz not null default now()
 );
+
+alter table public.audit_log enable row level security;
+revoke all on table public.audit_log from anon;
 
 create index if not exists audit_log_created_at_idx on public.audit_log (created_at desc);
 create index if not exists audit_log_actor_idx on public.audit_log (actor_id);
@@ -238,8 +316,8 @@ on public.profiles for update to authenticated
 using (id = auth.uid())
 with check (
   id = auth.uid()
-  and role = (select role from public.profiles where id = auth.uid())
-  and is_active = (select is_active from public.profiles where id = auth.uid())
+  and role = public.my_role()
+  and is_active = public.my_is_active()
 );
 
 drop policy if exists "admins manage profiles" on public.profiles;
@@ -267,3 +345,59 @@ with check (actor_id = auth.uid() and public.can_read());
 
 alter table public.profiles  replica identity full;
 alter table public.audit_log replica identity full;
+
+-- ============================================================================
+-- COMPROBACION (solo lectura, ejecutar despues del paso 3)
+-- ============================================================================
+-- 1. Que ninguna tabla de negocio siga concediendo permisos a anon.
+--    Debe devolver 0 filas.
+-- select table_name, privilege_type
+-- from information_schema.role_table_grants
+-- where grantee = 'anon' and table_schema = 'public'
+--   and table_name in ('tasks','subtasks','client_emails',
+--                      'controlled_operations','historical_results',
+--                      'sunat_due_dates','profiles','audit_log');
+--
+-- 2. Que las politicas nuevas existan (debe devolver 24 filas: 4 por tabla).
+-- select tablename, policyname, cmd from pg_policies
+-- where schemaname = 'public'
+--   and policyname in ('read for active members','insert for writers',
+--                      'update for writers','hard delete for admins')
+-- order by tablename, cmd;
+--
+-- 3. Que exista exactamente un administrador activo.
+-- select email, role, is_active from public.profiles where role = 'admin';
+--
+-- 4. Que RLS este activo en todas las tablas implicadas.
+-- select relname, relrowsecurity from pg_class
+-- where relnamespace = 'public'::regnamespace
+--   and relname in ('tasks','subtasks','client_emails','controlled_operations',
+--                   'historical_results','sunat_due_dates','profiles','audit_log');
+
+-- ============================================================================
+-- REVERSION DE EMERGENCIA (descomentar solo si hay que volver atras)
+-- ============================================================================
+-- Devuelve el acceso publico tal como esta hoy. No borra profiles, audit_log
+-- ni las columnas de papelera: son aditivas y no molestan.
+--
+-- do $$
+-- declare
+--   target text;
+-- begin
+--   foreach target in array array[
+--     'tasks','subtasks','client_emails',
+--     'controlled_operations','historical_results','sunat_due_dates'
+--   ]
+--   loop
+--     execute format('grant select, insert, update, delete on table public.%I to anon, authenticated', target);
+--     execute format('drop policy if exists "read for active members" on public.%I', target);
+--     execute format('drop policy if exists "insert for writers" on public.%I', target);
+--     execute format('drop policy if exists "update for writers" on public.%I', target);
+--     execute format('drop policy if exists "hard delete for admins" on public.%I', target);
+--     execute format('create policy "Allow public reads" on public.%I for select to anon, authenticated using (true)', target);
+--     execute format('create policy "Allow public inserts" on public.%I for insert to anon, authenticated with check (true)', target);
+--     execute format('create policy "Allow public updates" on public.%I for update to anon, authenticated using (true) with check (true)', target);
+--     execute format('create policy "Allow public deletes" on public.%I for delete to anon, authenticated using (true)', target);
+--   end loop;
+-- end
+-- $$;
