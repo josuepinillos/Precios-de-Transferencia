@@ -19,7 +19,7 @@ export default function Home() {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-canvas">
+      <div className="flex min-h-dvh items-center justify-center bg-canvas">
         <div className="flex flex-col items-center gap-4">
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-line-strong border-t-accent" />
           <p className="text-sm text-ink-soft">Sincronizando con Supabase...</p>
@@ -29,9 +29,9 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-canvas text-ink">
+    <div className="flex min-h-dvh overflow-x-hidden bg-canvas text-ink md:h-dvh md:overflow-hidden">
       <Sidebar />
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-hidden pt-16 md:pt-0 lg:h-screen">
+      <div className="flex min-w-0 flex-1 flex-col pt-16 md:h-dvh md:min-h-0 md:pt-0">
         <Header />
         {error && (
           <div className="mx-4 mt-4 flex items-start justify-between gap-4 rounded-control border border-critical/25 bg-critical-soft px-4 py-3 text-sm text-critical-ink sm:mx-6 lg:mx-8">
@@ -49,7 +49,7 @@ export default function Home() {
             </button>
           </div>
         )}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        <main className="scroll-area min-h-0 flex-1 overflow-x-hidden">
           <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 p-4 sm:p-6 lg:gap-6 lg:p-8">
             {currentView === 'timeline' && <KPICards />}
 

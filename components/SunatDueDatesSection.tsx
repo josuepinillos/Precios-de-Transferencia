@@ -347,7 +347,7 @@ export const SunatDueDatesSection = () => {
           </select>
         </div>
 
-        <div className="sunat-table-wrap overflow-x-auto rounded-xl border border-line scrollbar-hide">
+        <div className="sunat-table-wrap scroll-area-x rounded-xl border border-line">
           <table className="min-w-[1120px] w-full border-collapse text-left text-sm">
             <thead className="sunat-table-header bg-surface-muted text-xs uppercase tracking-wide text-ink-faint">
               <tr>
@@ -416,7 +416,7 @@ export const SunatDueDatesSection = () => {
 
       <div ref={referenceRef} className="rounded-2xl border border-line bg-surface p-4">
         <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-ink">Cronograma ejercicio 2025</h3>
-        <div className="overflow-x-auto scrollbar-hide">
+        <div className="scroll-area-x">
           <table className="min-w-[720px] w-full border-collapse text-center text-sm">
             <tbody>
               <tr className="bg-surface-muted text-xs uppercase tracking-wide text-ink-faint">

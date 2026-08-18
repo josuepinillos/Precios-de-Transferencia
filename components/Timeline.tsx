@@ -92,8 +92,8 @@ export const Timeline = () => {
   };
 
   return (
-    <div className="card flex h-auto min-h-[520px] flex-col p-4 sm:p-5 lg:h-full xl:h-[720px]">
-      <div className="relative flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+    <div className="card flex h-auto min-h-[520px] flex-col p-4 sm:p-5">
+      <div className="relative flex-1 overflow-x-hidden">
         {/* Spine connecting the day markers. */}
         <div className="absolute bottom-6 left-[27px] top-6 w-px bg-line sm:left-[39px]" />
 

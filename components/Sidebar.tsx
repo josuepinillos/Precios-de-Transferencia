@@ -131,7 +131,7 @@ export const Sidebar = () => {
       </aside>
 
       {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-screen flex-shrink-0 flex-col border-r border-line bg-surface px-3 py-5 md:flex md:w-[80px] lg:w-[248px]">
+      <aside className="sticky top-0 hidden h-dvh flex-shrink-0 flex-col overflow-y-auto border-r border-line bg-surface px-3 py-5 md:flex md:w-[80px] lg:w-[248px]">
         <div className="mb-8 px-2 md:flex md:justify-center lg:justify-start">
           <Brand compact />
         </div>

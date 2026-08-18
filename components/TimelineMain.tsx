@@ -44,8 +44,8 @@ export const TimelineMain = () => {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-5 xl:h-[720px] xl:flex-row">
-        <div className="min-w-0 flex-1 overflow-hidden">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+        <div className="min-w-0 flex-1">
           <Timeline />
         </div>
         <TaskPanel />

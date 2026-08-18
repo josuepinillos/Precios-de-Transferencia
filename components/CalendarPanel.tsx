@@ -35,7 +35,7 @@ export const CalendarPanel = () => {
   const displayDate = formatCalendarPanelDate(currentDate);
 
   return (
-    <aside className="card flex h-auto w-full flex-col overflow-hidden xl:h-full xl:w-[340px] 2xl:w-[380px]">
+    <aside className="card flex h-auto w-full flex-col overflow-hidden xl:sticky xl:top-0 xl:max-h-[calc(100dvh-3rem)] xl:w-[340px] 2xl:w-[380px]">
       <div className="border-b border-line px-5 py-4">
         <p className="eyebrow mb-1">Día seleccionado</p>
         <h2 className="text-base font-semibold tracking-tight text-ink">{displayDate}</h2>
@@ -46,7 +46,7 @@ export const CalendarPanel = () => {
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto p-4 scrollbar-hide">
+      <div className="scroll-area flex min-h-0 flex-1 flex-col gap-2.5 p-4">
         {dayTasks.map((task) => {
           const progress = getTaskProgress(task.id);
           const tone = toneForProgress(progress);

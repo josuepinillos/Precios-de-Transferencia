@@ -76,7 +76,7 @@ export const CalendarGrid = ({ displayedMonth, onSelectDate }: CalendarGridProps
   };
 
   return (
-    <div className="card flex h-auto min-h-[520px] flex-col overflow-hidden p-3 sm:p-4 lg:p-5 xl:h-full">
+    <div className="card flex h-auto min-h-[520px] flex-col overflow-hidden p-3 sm:p-4 lg:p-5">
       {/* Weekday header */}
       <div className="mb-2 grid grid-cols-7">
         {DAYS_OF_WEEK.map(day => (

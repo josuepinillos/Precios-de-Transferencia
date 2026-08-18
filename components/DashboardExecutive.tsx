@@ -5,6 +5,8 @@ import clsx from 'clsx';
 import {
   Calendar,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Edit2,
   Folder,
@@ -19,6 +21,7 @@ import { useDashboardStore } from '../store/useDashboardStore';
 import { Avatar } from './ui/Avatar';
 import { Badge, toneForProgress } from './ui/Badge';
 import { ProgressBar } from './ui/Progress';
+import { IconButton } from './ui/Button';
 import { ClientEmailsSection } from './ClientEmailsSection';
 import { ControlledOperationsSection } from './ControlledOperationsSection';
 import { FormalObligationsBadge } from './FormalObligationsBadge';
@@ -76,6 +79,39 @@ export const DashboardExecutive = () => {
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [isSavingSubtask, setIsSavingSubtask] = React.useState(false);
   const [matrixSearch, setMatrixSearch] = React.useState('');
+
+  // Horizontal paging for the matrix strip. Every task stays in the DOM and
+  // in the tab order — the buttons only move the scroll window.
+  const matrixScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const [matrixNav, setMatrixNav] = React.useState({ canPrev: false, canNext: false });
+
+  const syncMatrixNav = React.useCallback(() => {
+    const el = matrixScrollerRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setMatrixNav({ canPrev: el.scrollLeft > 4, canNext: el.scrollLeft < maxScroll - 4 });
+  }, []);
+
+  // Measured in the ref callback rather than an effect: reading scrollWidth
+  // forces layout, so the arrows have their correct state on first paint
+  // instead of waiting for a frame that may never be requested.
+  const attachMatrixScroller = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      matrixScrollerRef.current = node;
+      if (node) syncMatrixNav();
+    },
+    [syncMatrixNav],
+  );
+
+  const scrollMatrixBy = (direction: -1 | 1) => {
+    const el = matrixScrollerRef.current;
+    if (!el) return;
+    // A JS scroll option overrides the CSS scroll-behaviour, so honour the
+    // reduced-motion preference here rather than assuming smooth is welcome.
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // One "set" is exactly what is on screen, whatever the breakpoint shows.
+    el.scrollBy({ left: direction * el.clientWidth, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  };
 
   const selectedTask = tasks.find((task) => task.id === selectedTaskId) || tasks[0] || null;
   const normalizedMatrixSearch = matrixSearch.trim().toLowerCase();
@@ -187,6 +223,21 @@ export const DashboardExecutive = () => {
     }
   };
 
+  React.useEffect(() => {
+    const el = matrixScrollerRef.current;
+    if (!el) return;
+
+    syncMatrixNav();
+    el.addEventListener('scroll', syncMatrixNav, { passive: true });
+    const observer = new ResizeObserver(syncMatrixNav);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', syncMatrixNav);
+      observer.disconnect();
+    };
+  }, [syncMatrixNav, visibleMatrixTasks.length]);
+
   if (tasks.length === 0) {
     return (
       <section className="card rounded-2xl border border-line p-6 sm:p-8 text-center">
@@ -216,19 +267,45 @@ export const DashboardExecutive = () => {
             {visibleMatrixTasks.length} de {tasks.length} {tasks.length === 1 ? 'expediente' : 'expedientes'} · selecciona uno para ver su detalle
           </p>
         </div>
-        <div className="relative w-full md:w-[300px] lg:w-[340px]">
-          <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input
-            type="text"
-            value={matrixSearch}
-            onChange={(event) => setMatrixSearch(event.target.value)}
-            placeholder="Buscar tarea matriz..."
-            className="field pl-9"
-          />
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-full md:w-[260px] lg:w-[300px]">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+            <input
+              type="text"
+              value={matrixSearch}
+              onChange={(event) => setMatrixSearch(event.target.value)}
+              placeholder="Buscar tarea matriz..."
+              className="field pl-9"
+            />
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-1.5">
+            <IconButton
+              size="sm"
+              variant="secondary"
+              onClick={() => scrollMatrixBy(-1)}
+              disabled={!matrixNav.canPrev}
+              aria-label="Ver tareas matrices anteriores"
+            >
+              <ChevronLeft size={16} />
+            </IconButton>
+            <IconButton
+              size="sm"
+              variant="secondary"
+              onClick={() => scrollMatrixBy(1)}
+              disabled={!matrixNav.canNext}
+              aria-label="Ver tareas matrices siguientes"
+            >
+              <ChevronRight size={16} />
+            </IconButton>
+          </div>
         </div>
       </div>
 
-      <div className="flex snap-x gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <div
+        ref={attachMatrixScroller}
+        role="group"
+        aria-label="Tareas matrices"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 scrollbar-hide scroll-smooth">
         {visibleMatrixTasks.map((task) => {
           const progress = getTaskProgress(task.id);
           const status = getTaskStatus(progress);
@@ -245,7 +322,8 @@ export const DashboardExecutive = () => {
                 setIsAddingSubtask(false);
               }}
               className={clsx(
-                "card card-interactive w-[290px] flex-shrink-0 snap-start p-4 text-left sm:w-[310px]",
+                "card card-interactive flex-shrink-0 snap-start p-4 text-left",
+                "w-full sm:w-[calc((100%-0.75rem)/2)] lg:w-[calc((100%-1.5rem)/3)] xl:w-[calc((100%-2.25rem)/4)]",
                 isSelected && "border-accent shadow-focus",
               )}
             >
@@ -331,7 +409,7 @@ export const DashboardExecutive = () => {
                 </button>
               </div>
 
-              <div className="flex max-h-[460px] flex-col gap-2 overflow-y-auto p-3 scrollbar-hide">
+              <div className="scroll-area flex max-h-[min(70vh,640px)] flex-col gap-2 p-3">
                 {selectedTask.subtasks.map((subtask, index) => {
                   const assignee = subtask.assignee || selectedTask.assignee;
                   const visualStatus = getSubtaskVisualStatus(subtask, selectedProgress, index, completedSubtasks);
@@ -465,7 +543,7 @@ export const DashboardExecutive = () => {
               <div className="border-b border-line px-4 py-3.5">
                 <h3 className="text-[13px] font-semibold tracking-tight text-ink">Timeline interno</h3>
               </div>
-              <div className="max-h-[460px] overflow-y-auto p-4 scrollbar-hide">
+              <div className="scroll-area max-h-[min(70vh,640px)] p-4">
                 <div className="relative flex flex-col gap-4 before:absolute before:left-[29px] before:top-3 before:h-[calc(100%-1.5rem)] before:w-px before:bg-line">
                   {selectedTask.subtasks.map((subtask, index) => {
                     const assignee = subtask.assignee || selectedTask.assignee;

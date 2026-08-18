@@ -219,7 +219,7 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
           </div>
         )}
 
-        <div className="hidden max-h-[360px] overflow-y-auto rounded-xl border border-line md:block scrollbar-hide">
+        <div className="scroll-area hidden max-h-[min(60vh,420px)] rounded-xl border border-line md:block">
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead className="sticky top-0 z-10 bg-surface-muted">
               <tr className="border-b border-line text-[10px] uppercase tracking-wide text-ink-faint">
@@ -302,7 +302,7 @@ export const ClientEmailsSection = ({ task }: ClientEmailsSectionProps) => {
           )}
         </div>
 
-        <div className="flex max-h-[380px] flex-col gap-3 overflow-y-auto md:hidden scrollbar-hide">
+        <div className="scroll-area flex max-h-[min(60vh,440px)] flex-col gap-3 md:hidden">
           {emails.map((email) => (
             <article key={email.id} className="rounded-xl border border-line bg-surface-muted p-3">
               <div className="flex items-start gap-3">

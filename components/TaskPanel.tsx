@@ -248,7 +248,7 @@ export const TaskPanel = () => {
         initial={{ opacity: 0, y: 24, x: 0 }}
         animate={{ opacity: 1, y: 0, x: 0 }}
         exit={{ opacity: 0, y: 24, x: 0 }}
-        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full card rounded-t-2xl border border-line p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:relative xl:inset-auto xl:z-auto xl:w-[350px] xl:h-full xl:flex-shrink-0 xl:p-6"
+        className="fixed inset-x-0 bottom-0 z-30 max-h-[88dvh] w-full card rounded-t-2xl border border-line p-4 sm:p-5 flex flex-col shadow-2xl md:inset-x-auto md:inset-y-4 md:right-4 md:w-[360px] md:max-h-none md:rounded-2xl xl:sticky xl:inset-auto xl:top-0 xl:z-auto xl:max-h-[calc(100dvh-3rem)] xl:w-[350px] xl:flex-shrink-0 xl:p-6"
       >
         <div className="flex justify-between items-start mb-6 gap-2">
           {isEditing ? (
@@ -275,7 +275,7 @@ export const TaskPanel = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto scrollbar-hide pr-2 pb-4">
+        <div className="scroll-area min-h-0 flex-1 pr-2 pb-4">
           {error && (
             <div className="mb-4 rounded-lg border border-critical/30 bg-critical-soft px-3 py-2 text-xs text-critical-ink">
               {error}

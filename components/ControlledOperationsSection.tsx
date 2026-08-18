@@ -615,7 +615,7 @@ export const ControlledOperationsSection = ({ task }: ControlledOperationsSectio
           })}
         </div>
 
-        <div className="hidden max-h-[420px] overflow-auto rounded-xl border border-line md:block scrollbar-hide">
+        <div className="scroll-area scroll-area-x hidden max-h-[min(65vh,520px)] rounded-xl border border-line md:block">
           <table className="w-full min-w-[1040px] border-collapse text-left">
             <thead className="sticky top-0 z-10 bg-surface-muted">
               <tr className="border-b border-line text-[10px] uppercase tracking-wide text-ink-faint">

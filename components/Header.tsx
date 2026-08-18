@@ -28,7 +28,7 @@ export const Header = () => {
   const meta = VIEW_META[currentView] ?? VIEW_META.dashboard;
 
   return (
-    <header className="border-b border-line bg-surface px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+    <header className="shrink-0 border-b border-line bg-surface px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-[1600px] items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="eyebrow mb-1.5">Campaña Precios de Transferencia 2025</p>
