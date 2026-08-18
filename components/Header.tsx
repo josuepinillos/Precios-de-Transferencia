@@ -3,6 +3,7 @@
 import React from 'react';
 import { useDashboardStore } from '../store/useDashboardStore';
 import { ThemeToggle } from './ui/ThemeToggle';
+import { ProfileMenu } from './auth/ProfileMenu';
 
 const VIEW_META: Record<string, { title: string; description: string }> = {
   dashboard: {
@@ -37,7 +38,10 @@ export const Header = () => {
           </h1>
           <p className="mt-1 text-sm text-ink-soft">{meta.description}</p>
         </div>
-        <ThemeToggle className="flex-shrink-0" />
+        <div className="flex flex-shrink-0 items-center gap-2.5">
+          <ThemeToggle />
+          <ProfileMenu />
+        </div>
       </div>
     </header>
   );

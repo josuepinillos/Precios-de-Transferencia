@@ -293,6 +293,63 @@ export type Database = {
           },
         ];
       };
+      profiles: {
+        Row: {
+          id: string;
+          full_name: string | null;
+          email: string;
+          avatar_url: string | null;
+          role: 'admin' | 'editor' | 'consultor' | 'lector';
+          is_active: boolean;
+          last_sign_in_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name?: string | null;
+          email: string;
+          avatar_url?: string | null;
+          role?: 'admin' | 'editor' | 'consultor' | 'lector';
+          is_active?: boolean;
+          last_sign_in_at?: string | null;
+        };
+        Update: {
+          full_name?: string | null;
+          email?: string;
+          avatar_url?: string | null;
+          role?: 'admin' | 'editor' | 'consultor' | 'lector';
+          is_active?: boolean;
+          last_sign_in_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          actor_id: string | null;
+          actor_email: string | null;
+          action: string;
+          entity: string;
+          entity_id: string | null;
+          old_data: Json | null;
+          new_data: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id: string | null;
+          actor_email?: string | null;
+          action: string;
+          entity: string;
+          entity_id?: string | null;
+          old_data?: Json | null;
+          new_data?: Json | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -316,9 +373,13 @@ export const getSupabaseClient = () => {
   if (!browserClient) {
     browserClient = createClient<Database>(supabaseUrl, supabaseKey, {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
+        // Supabase Auth owns the session: keep it across reloads, refresh it
+        // before it expires, and read the tokens back from recovery links.
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        storageKey: 'tp-auth',
       },
       db: {
         schema: 'public',

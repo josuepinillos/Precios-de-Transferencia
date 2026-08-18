@@ -9,8 +9,9 @@ import { CalendarMain } from '@/components/CalendarMain';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { DashboardExecutive } from '@/components/DashboardExecutive';
 import { SunatDueDatesSection } from '@/components/SunatDueDatesSection';
+import { AuthGate } from '@/components/auth/AuthGate';
 
-export default function Home() {
+function Workspace() {
   const { currentView, initRealtime, isLoaded, error, clearError } = useDashboardStore();
 
   useEffect(() => {
@@ -62,5 +63,13 @@ export default function Home() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AuthGate>
+      <Workspace />
+    </AuthGate>
   );
 }
